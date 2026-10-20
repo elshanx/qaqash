@@ -1,4 +1,4 @@
-import type { Ask, Session, Track } from './types'
+import type { Activity, Ask, Session, Track } from './types'
 
 export const state = {
   queue: [] as Ask[],
@@ -8,6 +8,7 @@ export const state = {
   track: null as Track | null,
   trackSyncedAt: 0,
   barHeight: 33,
+  activity: null as Activity | null,
 }
 
 export const picks = new Map<string, string[]>()

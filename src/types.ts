@@ -32,6 +32,10 @@ export type Ask = {
   event: HookEvent & { device?: string, code?: string }
 }
 
+import type { DiffLine } from './diff'
+
+export type Activity = { event: HookEvent, diff: DiffLine[] | null, steps: string[], done: boolean }
+
 export type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 
 export type Session = { name: string, state: string, mood: Mood, seen: number, pid?: number }

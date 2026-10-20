@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
-import { ask, content, detail, island, player, sessionList, status } from './dom'
+import { renderActivity } from './activity'
+import { activity, ask, content, detail, island, player, sessionList, status } from './dom'
 import { projectOf } from './hook-events'
 import { markHot } from './hover'
 import { wobble } from './liquid'
@@ -46,9 +47,10 @@ export const showStatus = (text: string) => {
 export const render = async () => {
   const id = ++renderId
   const [first] = state.queue
-  const showSessions = !first && state.hovering && sessions.size > 0
-  const showPlayer = !first && state.hovering && Boolean(state.track)
-  const open = Boolean(first) || showSessions || showPlayer
+  const showActivity = !first && Boolean(state.activity?.diff)
+  const showSessions = !first && !showActivity && state.hovering && sessions.size > 0
+  const showPlayer = !first && !showActivity && state.hovering && Boolean(state.track)
+  const open = Boolean(first) || showSessions || showPlayer || showActivity
   if (!open && island.hasAttribute('data-open')) {
     content.setAttribute('data-leaving', '')
     size(collapsedWidth, state.barHeight)
@@ -67,8 +69,10 @@ export const render = async () => {
     sessionList.toggleAttribute('data-entering', sessionList.hidden)
     sessionList.replaceChildren(...[...sessions.values()].map(sessionRow))
   }
+  if (showActivity) renderActivity()
   ask.hidden = !first
-  detail.toggleAttribute('data-overflowing', !detail.hidden && detail.scrollHeight > 72)
+  activity.hidden = !showActivity
+  detail.toggleAttribute('data-overflowing', !detail.hidden && detail.scrollHeight > detail.clientHeight)
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
   markHot()

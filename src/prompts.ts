@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { actions, allow, back, deny, detail, footer, icon, kicker, next, questionList, tool } from './dom'
+import { diffOf, fileOf, renderDiff } from './diff'
 import { projectOf, summarize } from './hook-events'
 import { render } from './island'
 import { setMood } from './mood'
@@ -81,8 +82,11 @@ const renderPermission = (request: Ask, more: string) => {
   icon.dataset.kind = 'permission'
   icon.textContent = iconFor(request.event.tool_name)
   kicker.textContent = `${projectOf(request.event)} wants to use${more}`
-  tool.textContent = request.event.tool_name ?? 'a tool'
-  detail.textContent = summarize(request.event.tool_input)
+  const diff = diffOf(request.event)
+  tool.textContent = [request.event.tool_name ?? 'a tool', diff && fileOf(request.event)].filter(Boolean).join(' · ')
+  if (diff) renderDiff(detail, diff)
+  else detail.textContent = summarize(request.event.tool_input)
+  detail.classList.toggle('diff', Boolean(diff))
   detail.hidden = false
   actions.hidden = false
   questionList.hidden = true
@@ -114,6 +118,7 @@ const renderPairing = (request: Ask) => {
   icon.textContent = '⇄'
   kicker.textContent = 'Wants to pair with this Mac'
   tool.textContent = request.event.device ?? 'iPhone'
+  detail.classList.remove('diff')
   detail.textContent = `Code ${request.event.code}. Allow only if your iPhone shows the same code.`
   detail.hidden = false
   actions.hidden = false

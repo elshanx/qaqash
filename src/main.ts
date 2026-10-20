@@ -5,8 +5,10 @@ import './styles/face.css'
 import './styles/prompt.css'
 import './styles/sessions.css'
 import './styles/music.css'
+import './styles/activity.css'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { startActivity, trackActivity } from './activity'
 import { describe, moodOf } from './hook-events'
 import { startHover } from './hover'
 import { render, showStatus } from './island'
@@ -22,10 +24,12 @@ listen<HookEvent>('status', ({ payload }) => {
   if (state.queue.length === 0) showStatus(state.lastStatus)
   dropStale(payload)
   trackSession(payload)
+  trackActivity(payload)
   setMood(moodOf(payload))
 })
 
 startHover()
+startActivity()
 startPrompts()
 startSessions()
 startMusic()

@@ -12,7 +12,7 @@ use tauri::{ActivationPolicy, Manager};
 fn main() {
     tauri::Builder::default()
         .manage(hooks::Pending::default())
-        .invoke_handler(tauri::generate_handler![window::set_hit_area, window::menu_bar_height, hooks::decide, hooks::forget, music::music_control, music::music_artwork, sessions::open_session, phone::pairing_code, phone::pairing_text])
+        .invoke_handler(tauri::generate_handler![window::set_hit_area, window::menu_bar_height, hooks::decide, hooks::forget, music::music_control, music::music_artwork, sessions::open_session, sessions::open_in_vscode, phone::pairing_code, phone::pairing_text])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
             tray::create(app)?;

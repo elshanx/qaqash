@@ -1,0 +1,106 @@
+#activity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 0 4px;
+}
+
+#activity[data-entering] {
+  transform-origin: top center;
+  animation: rise var(--spring-ms) var(--spring) 60ms both;
+}
+
+#steps {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+#steps li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#steps li::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+#steps .done::before {
+  background: var(--green);
+}
+
+#steps .running {
+  color: #fff;
+}
+
+#steps .running::before {
+  box-sizing: border-box;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(1turn); }
+}
+
+#file {
+  font: 11px ui-monospace, monospace;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.diff {
+  margin: 0;
+  max-height: 168px;
+  padding: 8px 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #1c1c1e;
+  font: 11px/1.5 ui-monospace, monospace;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#detail.diff {
+  max-height: 168px;
+  padding: 8px 0;
+  white-space: pre;
+  word-break: normal;
+}
+
+.diff .line {
+  display: block;
+  padding: 0 12px;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff .del {
+  background: rgba(255, 69, 58, 0.16);
+  color: #ff8a80;
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 138, 128, 0.5);
+}
+
+.diff .add {
+  background: rgba(48, 209, 88, 0.16);
+  color: #7ee2a0;
+}
+
+#file[data-hot],
+#diff[data-hot] {
+  color: #fff;
+  cursor: pointer;
+}
+
+#diff[data-hot] {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
