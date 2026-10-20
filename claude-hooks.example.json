@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
           }
         ]
       }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
           }
         ]
       }
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
           }
         ]
       }
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh",
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh",
             "timeout": 600
           }
         ]
@@ -56,7 +56,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
           }
         ]
       }
@@ -66,7 +66,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
           }
         ]
       }
