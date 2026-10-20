@@ -35,7 +35,7 @@ type Ask = {
   event: HookEvent
 }
 
-const pill = document.getElementById('pill')!
+const island = document.getElementById('island')!
 const status = document.getElementById('status')!
 const ask = document.getElementById('ask')!
 const sessionList = document.getElementById('sessions')!
@@ -142,13 +142,13 @@ let restTimer = 0
 
 const setMood = (mood: Mood) => {
   clearTimeout(restTimer)
-  pill.dataset.mood = queue.length > 0 ? 'needs' : mood
+  island.dataset.mood = queue.length > 0 ? 'needs' : mood
   showCompactMusic()
-  if (pill.dataset.mood === 'done') restTimer = window.setTimeout(() => setMood('idle'), 4000)
+  if (island.dataset.mood === 'done') restTimer = window.setTimeout(() => setMood('idle'), 4000)
 }
 
 const showCompactMusic = () => {
-  pill.toggleAttribute('data-music', Boolean(track?.playing) && pill.dataset.mood !== 'needs')
+  island.toggleAttribute('data-music', Boolean(track?.playing) && island.dataset.mood !== 'needs')
 }
 
 const hueOf = (text: string) => [...text].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7)
@@ -205,7 +205,7 @@ const tintFrom = (url: string) => {
       blue += b * weight
       total += weight
     }
-    if (currentCover === url) pill.style.setProperty('--tint', vivid(red / total, green / total, blue / total))
+    if (currentCover === url) island.style.setProperty('--tint', vivid(red / total, green / total, blue / total))
   }
   image.src = url
 }
@@ -220,7 +220,7 @@ const paintArtwork = () => {
     if (cover) element.style.setProperty('--art', `url("${cover}")`)
     else element.style.removeProperty('--art')
   })
-  pill.style.setProperty('--tint', `hsl(${hueOf(track?.album ?? '')} 75% 65%)`)
+  island.style.setProperty('--tint', `hsl(${hueOf(track?.album ?? '')} 75% 65%)`)
   if (cover) tintFrom(cover)
 }
 
@@ -333,9 +333,9 @@ const renderQuestionStep = (request: Ask, more: string) => {
 }
 
 const size = (width: number, height: number) => {
-  pill.style.setProperty('--w', `${width}px`)
-  pill.style.setProperty('--h', `${height}px`)
-  pill.toggleAttribute('data-open', height > barHeight)
+  island.style.setProperty('--w', `${width}px`)
+  island.style.setProperty('--h', `${height}px`)
+  island.toggleAttribute('data-open', height > barHeight)
   invoke('set_hit_area', { width, height })
 }
 
@@ -345,11 +345,11 @@ const projectOf = (event: HookEvent): string =>
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const bump = () => {
-  if (pill.hasAttribute('data-open')) return
+  if (island.hasAttribute('data-open')) return
   clearTimeout(bumpTimer)
   size(collapsedWidth + 18, barHeight)
   bumpTimer = window.setTimeout(() => {
-    if (!pill.hasAttribute('data-open')) size(collapsedWidth, barHeight)
+    if (!island.hasAttribute('data-open')) size(collapsedWidth, barHeight)
   }, 140)
 }
 
@@ -382,7 +382,7 @@ const render = async () => {
   const showSessions = !first && hovering && sessions.size > 0
   const showPlayer = !first && hovering && Boolean(track)
   const open = Boolean(first) || showSessions || showPlayer
-  if (!open && pill.hasAttribute('data-open')) {
+  if (!open && island.hasAttribute('data-open')) {
     content.setAttribute('data-leaving', '')
     size(collapsedWidth, barHeight)
     await sleep(morph.ms)
