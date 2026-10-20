@@ -10,9 +10,7 @@ use tauri::{AppHandle, Manager};
 use crate::hooks::{resolve, Pending};
 
 const PORT: u16 = 47832;
-const ANSWER_PORT: u16 = 47833;
 const LONG_POLL: Duration = Duration::from_secs(25);
-const NUDGE_AFTER: Duration = Duration::from_secs(10);
 const KEPT_EVENTS: usize = 200;
 
 struct Feed {
@@ -25,7 +23,6 @@ struct Feed {
 static FEED: Mutex<Feed> = Mutex::new(Feed { seq: 0, events: VecDeque::new(), asks: BTreeMap::new(), sessions: BTreeMap::new() });
 static CHANGED: Condvar = Condvar::new();
 static SETTINGS: OnceLock<Mutex<Settings>> = OnceLock::new();
-static ANSWER_KEYS: Mutex<BTreeMap<String, u64>> = Mutex::new(BTreeMap::new());
 
 #[derive(Clone)]
 struct Settings {
@@ -34,7 +31,6 @@ struct Settings {
     certificate: String,
     private_key: String,
     pin: String,
-    ntfy_topic: String,
 }
 
 fn random_hex(size: usize) -> Option<String> {
@@ -66,7 +62,6 @@ fn create_settings(path: PathBuf) -> Option<Settings> {
         certificate: certified.cert.pem(),
         private_key: certified.signing_key.serialize_pem(),
         pin: hex(&Sha256::digest(certified.cert.der())),
-        ntfy_topic: String::new(),
     };
     save(&settings);
     Some(settings)
@@ -81,7 +76,6 @@ fn load_settings(path: PathBuf) -> Option<Settings> {
         certificate: text("certificate")?,
         private_key: text("private_key")?,
         pin: text("pin")?,
-        ntfy_topic: text("ntfy_topic").unwrap_or_default(),
     })
 }
 
@@ -92,7 +86,6 @@ fn save(settings: &Settings) {
         "certificate": settings.certificate,
         "private_key": settings.private_key,
         "pin": settings.pin,
-        "ntfy_topic": settings.ntfy_topic,
     });
     if let Some(folder) = settings.path.parent() {
         let _ = std::fs::create_dir_all(folder);
@@ -121,19 +114,10 @@ pub fn ask_opened(ask: &Value) {
     let mut feed = FEED.lock().unwrap();
     feed.asks.insert(id, ask.clone());
     publish(&mut feed, "ask", ask.clone());
-    drop(feed);
-    let ask = ask.clone();
-    thread::spawn(move || {
-        thread::sleep(NUDGE_AFTER);
-        if FEED.lock().unwrap().asks.contains_key(&id) {
-            nudge(&ask);
-        }
-    });
 }
 
 pub fn ask_closed(id: u64) {
     let mut feed = FEED.lock().unwrap();
-    ANSWER_KEYS.lock().unwrap().retain(|_, ask| *ask != id);
     if feed.asks.remove(&id).is_some() {
         publish(&mut feed, "resolved", json!({ "id": id }));
     }
@@ -149,46 +133,6 @@ pub fn status(event: &Value) {
         }
     }
     publish(&mut feed, "status", event.clone());
-}
-
-fn nudge(ask: &Value) {
-    let Some(topic) = settings().map(|settings| settings.ntfy_topic).filter(|topic| !topic.is_empty()) else { return };
-    let project = ask["event"]["cwd"].as_str().and_then(|cwd| cwd.rsplit('/').next()).unwrap_or("Claude");
-    let mut message = json!({ "topic": topic, "title": project, "priority": 4, "tags": ["eyes"] });
-    if ask["kind"] == "question" {
-        message["message"] = "Claude has a question for you.".into();
-    } else {
-        message["message"] = format!("Claude wants to use {}.", ask["event"]["tool_name"].as_str().unwrap_or("a tool")).into();
-        if let (Some(id), Some(key)) = (ask["id"].as_u64(), random_hex(16)) {
-            ANSWER_KEYS.lock().unwrap().insert(key.clone(), id);
-            let url = format!("http://{}:{ANSWER_PORT}/answer", wifi_address());
-            let button = |label: &str, body: &str| json!({ "action": "http", "label": label, "url": url, "headers": { "X-Answer-Key": key }, "body": body, "clear": true });
-            message["actions"] = json!([button("Deny", "deny"), button("Allow", "allow")]);
-        }
-    }
-    let _ = Command::new("curl").args(["-s", "-m", "10", "-H", "Content-Type: application/json", "-d", &message.to_string(), "https://ntfy.sh"]).output();
-}
-
-fn answer_from_notification(app: &AppHandle, mut request: tiny_http::Request) {
-    let key = request.headers().iter().find(|header| header.field.equiv("X-Answer-Key")).map(|header| header.value.to_string());
-    let id = key.and_then(|key| ANSWER_KEYS.lock().unwrap().remove(&key));
-    let mut body = String::new();
-    let _ = request.as_reader().read_to_string(&mut body);
-    match id {
-        Some(id) if request.url() == "/answer" => {
-            resolve(&app.state::<Pending>(), id, Value::Bool(body.trim() == "allow"));
-            reply(request, 200, json!({ "ok": true }))
-        }
-        _ => reply(request, 403, json!({ "error": "unknown or used key" })),
-    }
-}
-
-pub fn serve_answers(app: AppHandle) {
-    let Ok(server) = tiny_http::Server::http(("0.0.0.0", ANSWER_PORT)) else { return };
-    for request in server.incoming_requests() {
-        let app = app.clone();
-        thread::spawn(move || answer_from_notification(&app, request));
-    }
 }
 
 fn snapshot() -> Value {
@@ -297,18 +241,4 @@ pub fn pairing_code() -> Result<String, String> {
 #[tauri::command]
 pub fn pairing_text() -> Result<String, String> {
     Ok(pairing()?.to_string())
-}
-
-#[tauri::command]
-pub fn ntfy_topic() -> String {
-    settings().map(|settings| settings.ntfy_topic).unwrap_or_default()
-}
-
-#[tauri::command]
-pub fn set_notifications(on: bool) -> String {
-    let Some(settings) = SETTINGS.get() else { return String::new() };
-    let mut settings = settings.lock().unwrap();
-    settings.ntfy_topic = if on { random_hex(10).map(|id| format!("qaqash-{id}")).unwrap_or_default() } else { String::new() };
-    save(&settings);
-    settings.ntfy_topic.clone()
 }

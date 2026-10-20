@@ -17,7 +17,7 @@ Everything runs on your Mac. No account, no cloud, no telemetry.
 - **Music:** shows what Spotify or Apple Music is playing, with the cover, tinted bars and playback controls.
 - **Sounds:** a ping when Claude needs you, a chime when it's done.
 - **Quiet in the Claude app:** while the Claude desktop app is in front, Qaqash stays out of the way.
-- **iPhone notifications:** turn them on from the menu bar icon → **Pair iPhone…** and subscribe to your topic in the free [ntfy](https://ntfy.sh) app. Permission requests arrive with Allow and Deny buttons that work while your iPhone is on the same Wi-Fi.
+- **iPhone app (in progress):** an iPhone app with notifications, Allow/Deny and a Live Activity is being built. The Mac side pairs with a QR code from the menu bar icon → **Pair iPhone…**.
 
 ## Requirements
 
@@ -62,7 +62,7 @@ Claude Code ── hook.sh ──> Qaqash (127.0.0.1:47831) ──> the island
 
 ## Privacy
 
-Qaqash makes no network calls beyond your own Mac and your local Wi-Fi, with two exceptions: Spotify cover images load from Spotify's image server (`i.scdn.co`), and if you turn on iPhone notifications, they go through [ntfy.sh](https://ntfy.sh). Notifications only say the project and the tool, never the command, and the topic name is random.
+Qaqash makes no network calls beyond your own Mac and your local Wi-Fi, with one exception: Spotify cover images load from Spotify's image server (`i.scdn.co`).
 
 ## License
 

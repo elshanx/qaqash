@@ -63,31 +63,3 @@ button {
   color: var(--blue);
   background: var(--field);
 }
-
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  align-self: stretch;
-  margin-top: 8px;
-  font-weight: 500;
-}
-
-ol {
-  align-self: stretch;
-  margin: 0;
-  padding-left: 20px;
-  text-align: left;
-  line-height: 1.9;
-}
-
-#topic {
-  padding: 2px 8px;
-  font-family: ui-monospace, monospace;
-}
-
-.hint {
-  align-self: stretch;
-  text-align: left;
-  font-size: 11px;
-}

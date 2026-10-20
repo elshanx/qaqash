@@ -27,7 +27,7 @@ fn open_pairing(app: &AppHandle) {
     }
     let window = WebviewWindowBuilder::new(app, "pair", WebviewUrl::App("pair.html".into()))
         .title("Pair iPhone")
-        .inner_size(360.0, 620.0)
+        .inner_size(360.0, 470.0)
         .resizable(false)
         .center()
         .build();
