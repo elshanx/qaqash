@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { artist, elapsed, island, player, progress, remaining, title, toggle } from './dom'
+import { artist, elapsed, island, miniPlayer, miniTitle, miniToggle, player, progress, remaining, title, toggle } from './dom'
 import { render } from './island'
 import { showCompactMusic } from './mood'
 import { state } from './state'
@@ -96,15 +96,19 @@ const updateProgress = () => {
   progress.style.setProperty('--progress', String(track.duration ? position / track.duration : 0))
 }
 
+const idle = { app: 'Spotify', playing: false, title: 'Spotify', artist: 'Not playing', duration: 0 } as const
+
 export const renderPlayer = () => {
-  const { track } = state
-  if (!track) return
+  const track = state.track ?? idle
+  miniTitle.textContent = [track.title, track.artist].filter(Boolean).join(' · ')
+  miniToggle.toggleAttribute('data-playing', track.playing)
   title.textContent = track.title
   artist.textContent = track.artist
   progress.parentElement!.hidden = track.duration === 0
   toggle.toggleAttribute('data-playing', track.playing)
   player.toggleAttribute('data-playing', track.playing)
-  updateProgress()
+  player.toggleAttribute('data-idle', !state.track)
+  if (state.track) updateProgress()
 }
 
 const albumKey = (playing: Track | null) => (playing ? `${playing.app}:${playing.album}` : '')
@@ -124,23 +128,22 @@ export const startMusic = () => {
     state.trackSyncedAt = Date.now()
     if (albumChanged) loadArtwork()
     showCompactMusic()
+    if (!player.hidden || !miniPlayer.hidden) renderPlayer()
     if (state.hovering && wasShown !== Boolean(state.track)) render()
-    else if (!player.hidden) renderPlayer()
   })
 
-  document.querySelectorAll<HTMLElement>('[data-open-source]').forEach((element) => {
+  document.querySelectorAll<HTMLElement>('#player [data-open-source], #mini-player [data-open-source]').forEach((element) => {
     element.addEventListener('click', () => {
-      if (state.track) invoke('music_control', { player: state.track.app, action: 'open' })
+      invoke('music_control', { player: state.track?.app ?? idle.app, action: 'open' })
     })
   })
 
-  document.querySelectorAll<HTMLButtonElement>('#controls button').forEach((button) => {
+  document.querySelectorAll<HTMLButtonElement>('#controls button, #mini-toggle').forEach((button) => {
     button.addEventListener('click', async () => {
       const { track } = state
-      if (!track) return
       const action = button.dataset.action
-      await invoke('music_control', { player: track.app, action })
-      if (action === 'toggle') {
+      await invoke('music_control', { player: track?.app ?? idle.app, action })
+      if (track && action === 'toggle') {
         state.track = { ...track, playing: !track.playing, position: track.position + (track.playing ? (Date.now() - state.trackSyncedAt) / 1000 : 0) }
         state.trackSyncedAt = Date.now()
         showCompactMusic()

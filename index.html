@@ -30,6 +30,26 @@
             </button>
           </nav>
           <div id="settings" hidden></div>
+          <div id="activity" hidden>
+            <div id="who">
+              <div id="avatar"><i></i><i></i></div>
+              <div id="who-name"></div>
+              <div id="who-app">Claude Code</div>
+              <ol id="steps"></ol>
+            </div>
+            <div id="code" data-open-source>
+              <div id="tab"><span id="lang"></span><span id="file"></span><span id="file-path"></span></div>
+              <div id="diff" class="diff"></div>
+            </div>
+          </div>
+          <div id="mini-player" hidden>
+            <span class="art" data-open-source></span>
+            <span id="mini-title" data-open-source></span>
+            <button data-action="toggle" aria-label="Play or pause" id="mini-toggle">
+              <svg viewBox="0 0 24 24" class="pause"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>
+              <svg viewBox="0 0 24 24" class="play"><path d="M7 4.5L19.5 12L7 19.5Z" /></svg>
+            </button>
+          </div>
           <div id="player" hidden>
             <div id="track">
               <div id="art" class="art" data-open-source></div>
@@ -58,18 +78,6 @@
             </div>
           </div>
           <ul id="sessions" hidden></ul>
-          <div id="activity" hidden>
-            <div id="who">
-              <div id="avatar"><i></i><i></i></div>
-              <div id="who-name"></div>
-              <div id="who-app">Claude Code</div>
-              <ol id="steps"></ol>
-            </div>
-            <div id="code" data-open-source>
-              <div id="tab"><span id="lang"></span><span id="file"></span><span id="file-path"></span></div>
-              <div id="diff" class="diff"></div>
-            </div>
-          </div>
           <div id="ask" hidden>
             <div id="head">
               <div id="icon"></div>

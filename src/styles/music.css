@@ -199,3 +199,60 @@
 #toggle[data-playing] #play-icon {
   display: none;
 }
+
+#mini-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+#mini-player .art {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+#mini-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+#mini-toggle {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+#mini-toggle:hover,
+#mini-toggle[data-hot] {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#mini-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: #fff;
+}
+
+#mini-toggle:not([data-playing]) .pause,
+#mini-toggle[data-playing] .play {
+  display: none;
+}
+
+#mini-player:not([hidden]) + #player[hidden] + #sessions:not([hidden]),
+#activity:not([hidden]) ~ #sessions:not([hidden]) {
+  margin-top: 12px;
+}
+
+#player[data-idle] #track-eq {
+  display: none;
+}

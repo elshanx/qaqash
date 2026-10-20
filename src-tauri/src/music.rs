@@ -93,7 +93,8 @@ pub fn music_control(player: String, action: String) -> Result<(), String> {
         "Music" => ("Music", c"com.apple.Music"),
         _ => return Err("unknown player".into()),
     };
-    if !app_is_running(bundle_id) {
+    let launches = action == "toggle" || action == "open";
+    if !launches && !app_is_running(bundle_id) {
         return Err("music app is not running".into());
     }
     let commands = match (action.as_str(), player) {

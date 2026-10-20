@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { renderActivity } from './activity'
-import { activity, ask, content, settingsPage, tabs, detail, island, player, sessionList, status } from './dom'
+import { activity, ask, content, miniPlayer, settingsPage, tabs, detail, island, player, sessionList, status } from './dom'
 import { projectOf } from './hook-events'
 import { markHot } from './hover'
 import { wobble } from './liquid'
@@ -54,8 +54,10 @@ export const render = async () => {
   const page = first ? 'prompt' : state.hovering ? state.tab : working ? 'home' : null
   const home = page === 'home'
   const showActivity = home && working
-  const showPlayer = home && !working && Boolean(state.track)
-  const showSessions = page === 'sessions' || (home && !working && !state.track)
+  const showPlayer = home && !working
+  const showMini = showActivity
+  const list = page === 'sessions' ? 'all' : home && state.vscode ? 'vscode' : null
+  const showSessions = Boolean(list)
   const showSettings = page === 'settings'
   const showTabs = !first && state.hovering
   const open = page !== null
@@ -72,7 +74,7 @@ export const render = async () => {
   showStatus(first ? (first.kind === 'pair' ? 'Pairing' : projectOf(first.event)) : state.lastStatus)
   if (first) renderPrompt(first)
   if (showTabs) renderTabs()
-  if (showPlayer) {
+  if (showPlayer || showMini) {
     player.toggleAttribute('data-entering', player.hidden)
     renderPlayer()
   }
@@ -81,7 +83,7 @@ export const render = async () => {
     const offset = state.vscode ? 1 : 0
     sessionList.replaceChildren(
       ...(state.vscode ? [vscodeRow(state.vscode)] : []),
-      ...[...sessions.values()].map((session, index) => sessionRow(session, index + offset)),
+      ...(list === 'all' ? [...sessions.values()].map((session, index) => sessionRow(session, index + offset)) : []),
     )
   }
   if (showSettings) renderSettings()
@@ -92,6 +94,7 @@ export const render = async () => {
   detail.toggleAttribute('data-overflowing', !detail.hidden && detail.scrollHeight > detail.clientHeight)
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
+  miniPlayer.hidden = !showMini
   settingsPage.hidden = !showSettings
   markHot()
   size(open ? width : collapsedWidth, open ? state.barHeight + content.offsetHeight : state.barHeight)

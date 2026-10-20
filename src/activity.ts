@@ -5,6 +5,7 @@ import { projectOf } from './hook-events'
 import { render } from './island'
 import { state } from './state'
 import type { HookEvent } from './types'
+import { refreshVSCode } from './vscode'
 
 const lingerMs = 6000
 const maxSteps = 6
@@ -45,6 +46,7 @@ const show = () => {
   clearTimeout(hideTimer)
   hideTimer = window.setTimeout(close, lingerMs)
   render()
+  refreshVSCode().then(render)
 }
 
 type Run = { steps: string[], done: boolean }
@@ -86,7 +88,8 @@ const toolIcons: Record<string, string> = {
 }
 
 const stepRow = (name: string, stepState: 'done' | 'running') => {
-  const row = Object.assign(document.createElement('li'), { textContent: name, className: stepState })
+  const label = name.startsWith('mcp__') ? name.split('__').pop() : name
+  const row = Object.assign(document.createElement('li'), { textContent: label, className: stepState })
   row.dataset.icon = toolIcons[name] ?? 'tool'
   return row
 }

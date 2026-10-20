@@ -65,6 +65,10 @@
 }
 
 #steps li {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 8px;
