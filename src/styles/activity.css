@@ -19,22 +19,22 @@
 
 #avatar {
   display: flex;
-  gap: 9px;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  width: 64px;
   height: 50px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #fff, #d9dde6);
-  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.12);
+  padding-left: 4px;
 }
 
 #avatar i {
-  width: 6px;
-  height: 9px;
-  border-radius: 3px;
-  background: #111;
+  width: 12px;
+  height: 18px;
+  border-radius: 6px;
+  background: #fff;
   animation: blink 4s infinite;
+}
+
+[data-mood='thinking'] #avatar i {
+  animation: glance 1.2s ease-in-out infinite alternate;
 }
 
 #who-name {
