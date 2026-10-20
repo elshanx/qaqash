@@ -45,7 +45,7 @@ const trim = (lines: DiffLine[], start: number): Hunk => {
 const lineStartBefore = (text: string, index: number): number => {
   let at = index
   for (let n = 0; n <= context && at > 0; n++) at = text.lastIndexOf('\n', at - 1)
-  return Math.max(at, -1) + 1
+  return at <= 0 ? 0 : at + 1
 }
 
 const lineEndAfter = (text: string, index: number): number => {
@@ -74,15 +74,21 @@ const editHunk = (text: string | null, before: string, after: string): Hunk => {
 
 type Edit = { old_string?: string, new_string?: string }
 
-export const hunkOf = ({ tool_name: toolName, tool_input: input = {} }: HookEvent, text: string | null): Hunk | null => {
+const multiEditHunks = (text: string | null, edits: Edit[]): Hunk[] => {
+  let current = text
+  return edits.map(({ old_string: before = '', new_string: after = '' }) => {
+    const hunk = editHunk(current, before, after)
+    if (current?.includes(before)) current = current.replace(before, () => after)
+    return hunk
+  })
+}
+
+export const hunksOf = ({ tool_name: toolName, tool_input: input = {} }: HookEvent, text: string | null): Hunk[] => {
   switch (toolName) {
-    case 'Edit': return editHunk(text, String(input.old_string ?? ''), String(input.new_string ?? ''))
-    case 'MultiEdit': {
-      const [edit] = (input.edits as Edit[] | undefined) ?? []
-      return edit ? editHunk(text, edit.old_string ?? '', edit.new_string ?? '') : null
-    }
-    case 'Write': return trim(diffLines(text ?? '', String(input.content ?? '')), 1)
-    default: return null
+    case 'Edit': return [editHunk(text, String(input.old_string ?? ''), String(input.new_string ?? ''))]
+    case 'MultiEdit': return multiEditHunks(text, (input.edits as Edit[] | undefined) ?? [])
+    case 'Write': return [trim(diffLines(text ?? '', String(input.content ?? '')), 1)]
+    default: return []
   }
 }
 
@@ -109,11 +115,10 @@ const highlight = (text: string): Node[] => {
 
 const marks = { add: '+', del: '-', same: ' ' }
 
-export const renderDiff = (target: HTMLElement, { start, lines }: Hunk) => {
+const hunkRows = ({ start, lines }: Hunk): HTMLElement[] => {
   let oldLine = start
   let newLine = start
-  target.toggleAttribute('data-numbered', start > 0)
-  target.replaceChildren(...lines.map(({ kind, text }) => {
+  return lines.map(({ kind, text }) => {
     const number = kind === 'add' ? newLine++ : oldLine++
     if (kind === 'same') newLine++
     const row = Object.assign(document.createElement('span'), { className: `line ${kind}` })
@@ -125,5 +130,13 @@ export const renderDiff = (target: HTMLElement, { start, lines }: Hunk) => {
       code,
     )
     return row
-  }))
+  })
+}
+
+export const renderDiff = (target: HTMLElement, hunks: Hunk[]) => {
+  target.toggleAttribute('data-numbered', hunks.some(({ start }) => start > 0))
+  target.replaceChildren(...hunks.flatMap((hunk, index) => [
+    ...(index > 0 ? [Object.assign(document.createElement('span'), { className: 'gap', textContent: '⋯' })] : []),
+    ...hunkRows(hunk),
+  ]))
 }

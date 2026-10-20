@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { actions, allow, back, deny, detail, footer, icon, kicker, next, questionList, tool } from './dom'
-import { readHunk } from './activity'
-import { changesFiles, fileOf, hunkOf, renderDiff } from './diff'
+import { readHunks } from './activity'
+import { changesFiles, fileOf, hunksOf, renderDiff } from './diff'
 import type { Hunk } from './diff'
 import { projectOf, summarize } from './hook-events'
 import { render } from './island'
@@ -11,7 +11,7 @@ import { picks, state } from './state'
 import type { Ask, HookEvent, Question } from './types'
 
 const recommended = / ?\(recommended\)/i
-const hunks = new Map<number, Hunk>()
+const hunks = new Map<number, Hunk[]>()
 
 const questionsOf = (request: Ask): Question[] =>
   (request.event.tool_input?.questions as Question[] | undefined) ?? []
@@ -88,13 +88,13 @@ const renderPermission = (request: Ask, more: string) => {
   kicker.textContent = `${projectOf(request.event)} wants to use${more}`
   const edits = changesFiles(request.event)
   tool.textContent = [request.event.tool_name ?? 'a tool', edits && fileOf(request.event)].filter(Boolean).join(' · ')
-  const hunk = hunks.get(request.id) ?? hunkOf(request.event, null)
-  if (hunk) renderDiff(detail, hunk)
+  const shown = hunks.get(request.id) ?? hunksOf(request.event, null)
+  if (shown.length > 0) renderDiff(detail, shown)
   else detail.textContent = summarize(request.event.tool_input)
-  detail.classList.toggle('diff', Boolean(hunk))
+  detail.classList.toggle('diff', shown.length > 0)
   if (edits && !hunks.has(request.id)) {
-    readHunk(request.event).then((full) => {
-      if (!full || !state.queue.some(({ id }) => id === request.id)) return
+    readHunks(request.event).then((full) => {
+      if (full.length === 0 || !state.queue.some(({ id }) => id === request.id)) return
       hunks.set(request.id, full)
       render()
     })

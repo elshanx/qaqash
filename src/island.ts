@@ -48,7 +48,7 @@ export const showStatus = (text: string) => {
 export const render = async () => {
   const id = ++renderId
   const [first] = state.queue
-  const showActivity = !first && Boolean(state.activity?.hunk)
+  const showActivity = !first && Boolean(state.activity?.hunks.length)
   const showSessions = !first && !showActivity && state.hovering && (sessions.size > 0 || Boolean(state.vscode))
   const showPlayer = !first && !showActivity && state.hovering && Boolean(state.track)
   const open = Boolean(first) || showSessions || showPlayer || showActivity

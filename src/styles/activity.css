@@ -152,6 +152,10 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+#diff {
+  max-height: 280px;
+}
+
 #detail.diff {
   max-height: 176px;
   padding: 8px 0;
@@ -223,3 +227,10 @@
 .diff .number { color: #f78c6c; }
 .diff .type { color: #ffcb6b; }
 .diff .comment { color: rgba(255, 255, 255, 0.35); font-style: italic; }
+
+.diff .gap {
+  display: block;
+  padding-left: 32px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.3);
+}

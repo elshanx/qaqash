@@ -34,7 +34,7 @@ export type Ask = {
 
 import type { Hunk } from './diff'
 
-export type Activity = { event: HookEvent, hunk: Hunk | null, steps: string[], done: boolean }
+export type Activity = { event: HookEvent, hunks: Hunk[], steps: string[], done: boolean }
 
 export type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 

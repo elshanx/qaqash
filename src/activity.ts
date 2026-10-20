@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { activity, code, diffView, file, filePath, lang, steps, whoName } from './dom'
-import { changesFiles, fileOf, hunkOf, renderDiff } from './diff'
+import { changesFiles, fileOf, hunksOf, renderDiff } from './diff'
 import { projectOf } from './hook-events'
 import { render } from './island'
 import { state } from './state'
@@ -35,10 +35,10 @@ export const startActivity = () => {
   code.addEventListener('click', openFile)
 }
 
-export const readHunk = async (event: HookEvent) => {
+export const readHunks = async (event: HookEvent) => {
   const path = event.tool_input?.file_path
   const text = typeof path === 'string' ? await invoke<string | null>('read_file', { path }).catch(() => null) : null
-  return hunkOf(event, text)
+  return hunksOf(event, text)
 }
 
 const show = () => {
@@ -54,21 +54,21 @@ export const trackActivity = async (event: HookEvent) => {
     const done = current?.steps ?? []
     state.activity = {
       event: current?.event ?? event,
-      hunk: current?.hunk ?? null,
+      hunks: current?.hunks ?? [],
       steps: done.at(-1) === toolName ? done : [...done, toolName].slice(-maxSteps),
       done: false,
     }
     if (changesFiles(event)) {
-      const hunk = await readHunk(event)
+      const hunks = await readHunks(event)
       if (state.activity?.event.session_id !== event.session_id) return
-      state.activity = { ...state.activity, event, hunk }
+      state.activity = { ...state.activity, event, hunks }
     }
   } else if (name === 'Stop' && current) {
     state.activity = { ...current, done: true }
   } else {
     return
   }
-  if (state.activity.hunk) show()
+  if (state.activity.hunks.length > 0) show()
 }
 
 const stepRow = (name: string, stepState: 'done' | 'running') =>
@@ -81,7 +81,7 @@ const relativePath = ({ cwd = '', tool_input: input }: HookEvent): string => {
 
 export const renderActivity = () => {
   const current = state.activity
-  if (!current?.hunk) return
+  if (!current?.hunks.length) return
   const last = current.steps.length - 1
   steps.replaceChildren(
     ...current.steps.map((name, index) => stepRow(name, index < last || current.done ? 'done' : 'running')),
@@ -93,6 +93,6 @@ export const renderActivity = () => {
   lang.textContent = name.includes('.') ? name.split('.').pop()!.slice(0, 2).toUpperCase() : ''
   lang.hidden = !lang.textContent
   filePath.textContent = `\u200E${relativePath(current.event)}\u200E`
-  renderDiff(diffView, current.hunk)
+  renderDiff(diffView, current.hunks)
   activity.toggleAttribute('data-entering', activity.hidden)
 }
