@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pair iPhone</title>
+  </head>
+  <body>
+    <main>
+      <h1>Pair your iPhone</h1>
+      <p>Open Peep on your iPhone and scan this code. Both need to be on the same Wi-Fi.</p>
+      <div id="code"></div>
+      <button id="copy">Copy pairing code</button>
+      <label for="nudge">Text me on iMessage when Peep waits for you</label>
+      <input id="nudge" type="text" placeholder="Your phone number or Apple ID email" autocomplete="off" spellcheck="false" />
+      <p class="hint">Leave empty to turn texts off. Texts only say which project needs you, never the command.</p>
+    </main>
+    <script type="module" src="/src/pair.ts"></script>
+  </body>
+</html>

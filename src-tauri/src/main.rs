@@ -3,6 +3,7 @@ mod macos;
 mod music;
 mod phone;
 mod sessions;
+mod tray;
 mod window;
 
 use std::thread;
@@ -14,6 +15,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![window::set_hit_area, window::menu_bar_height, hooks::decide, hooks::forget, music::music_control, music::music_artwork, sessions::open_session, phone::pairing_code, phone::pairing_text, phone::nudge_target, phone::set_nudge_target])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
+            tray::create(app)?;
 
             let window = app.get_webview_window("main").unwrap();
             window::place(&window, window::CANVAS.0, window::CANVAS.1)?;
