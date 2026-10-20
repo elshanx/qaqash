@@ -155,3 +155,28 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+#questions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.options button {
+  padding: 4px 10px;
+}
+
+.options button.picked {
+  background: #0a84ff;
+}
+
+#allow:disabled {
+  opacity: 0.4;
+}

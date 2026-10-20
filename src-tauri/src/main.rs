@@ -11,7 +11,7 @@ use tauri::{ActivationPolicy, AppHandle, Emitter, LogicalPosition, LogicalSize, 
 #[derive(Default)]
 struct Pending {
     next_id: AtomicU64,
-    waiting: Mutex<HashMap<u64, Sender<bool>>>,
+    waiting: Mutex<HashMap<u64, Sender<Value>>>,
 }
 
 fn place(window: &WebviewWindow, width: f64, height: f64) -> tauri::Result<()> {
@@ -28,27 +28,44 @@ fn resize(window: WebviewWindow, width: f64, height: f64) -> Result<(), String> 
 }
 
 #[tauri::command]
-fn decide(pending: State<Pending>, id: u64, allow: bool) {
+fn decide(pending: State<Pending>, id: u64, answer: Value) {
     if let Some(sender) = pending.waiting.lock().unwrap().remove(&id) {
-        let _ = sender.send(allow);
+        let _ = sender.send(answer);
     }
 }
 
-fn answer_permission(app: &AppHandle, event: Value) -> String {
+fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -> Option<Value> {
     let pending = app.state::<Pending>();
     let id = pending.next_id.fetch_add(1, Ordering::Relaxed);
     let (sender, receiver) = channel();
     pending.waiting.lock().unwrap().insert(id, sender);
-    let _ = app.emit("permission", json!({ "id": id, "event": event }));
+    play("Ping");
+    let _ = app.emit("ask", json!({ "id": id, "kind": kind, "event": event }));
 
-    let decision = receiver.recv_timeout(Duration::from_secs(580));
+    let answer = receiver.recv_timeout(timeout).ok();
     pending.waiting.lock().unwrap().remove(&id);
-    let behavior = match decision {
-        Ok(true) => json!({ "behavior": "allow" }),
-        Ok(false) => json!({ "behavior": "deny", "message": "Denied from Peep" }),
-        Err(_) => return String::new(),
+    if answer.is_none() {
+        let _ = app.emit("expired", id);
+    }
+    answer
+}
+
+fn answer_permission(app: &AppHandle, event: Value) -> String {
+    let behavior = match wait_for_user(app, "permission", event, Duration::from_secs(580)) {
+        Some(Value::Bool(true)) => json!({ "behavior": "allow" }),
+        Some(_) => json!({ "behavior": "deny", "message": "Denied from Peep" }),
+        None => return String::new(),
     };
     json!({ "hookSpecificOutput": { "hookEventName": "PermissionRequest", "decision": behavior } }).to_string()
+}
+
+fn answer_question(app: &AppHandle, event: Value) -> String {
+    let mut input = event["tool_input"].clone();
+    let Some(answers) = wait_for_user(app, "question", event, Duration::from_secs(30)) else {
+        return String::new();
+    };
+    input["answers"] = answers;
+    json!({ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "allow", "updatedInput": input } }).to_string()
 }
 
 fn play(sound: &str) {
@@ -64,8 +81,9 @@ fn serve(app: AppHandle) {
             let _ = request.as_reader().read_to_string(&mut body);
             let event: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
             let reply = if event["hook_event_name"] == "PermissionRequest" {
-                play("Ping");
                 answer_permission(&app, event)
+            } else if event["hook_event_name"] == "PreToolUse" && event["tool_name"] == "AskUserQuestion" {
+                answer_question(&app, event)
             } else {
                 if event["hook_event_name"] == "Stop" {
                     play("Glass");
