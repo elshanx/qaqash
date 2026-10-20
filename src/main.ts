@@ -25,6 +25,7 @@ type Track = {
   album: string
   position: number
   duration: number
+  artworkUrl?: string
 }
 
 type Ask = {
@@ -64,7 +65,7 @@ let hovering = false
 let lastStatus = 'peep'
 let track: Track | null = null
 let trackSyncedAt = 0
-let artworkUrl: string | null = null
+let musicAppArtwork: string | null = null
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
 const spring = (response: number, dampingRatio: number) => {
@@ -135,10 +136,20 @@ const showCompactMusic = () => {
 
 const hueOf = (text: string) => [...text].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7)
 
+const spotifyCover = (url = ''): string | null => {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' && parsed.hostname === 'i.scdn.co' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
+
 const paintArtwork = () => {
+  const cover = musicAppArtwork ?? spotifyCover(track?.artworkUrl)
   document.querySelectorAll<HTMLElement>('.art').forEach((element) => {
     element.style.setProperty('--hue', String(hueOf(track?.album ?? '')))
-    if (artworkUrl) element.style.setProperty('--art', `url(${artworkUrl})`)
+    if (cover) element.style.setProperty('--art', `url("${cover}")`)
     else element.style.removeProperty('--art')
   })
   pill.style.setProperty('--tint', `hsl(${hueOf(track?.album ?? '')} 75% 65%)`)
@@ -162,6 +173,7 @@ const renderPlayer = () => {
   if (!track) return
   document.getElementById('title')!.textContent = track.title
   document.getElementById('artist')!.textContent = track.artist
+  progress.parentElement!.hidden = track.duration === 0
   toggle.toggleAttribute('data-playing', track.playing)
   player.toggleAttribute('data-playing', track.playing)
   updateProgress()
@@ -409,19 +421,24 @@ listen<Ask>('ask', ({ payload }) => {
   render()
 })
 
+const albumKey = (playing: Track | null) => (playing ? `${playing.app}:${playing.album}` : '')
+
+const loadArtwork = async () => {
+  const bytes = track?.app === 'Music' ? await invoke<number[] | null>('music_artwork') : null
+  if (musicAppArtwork) URL.revokeObjectURL(musicAppArtwork)
+  musicAppArtwork = bytes ? URL.createObjectURL(new Blob([new Uint8Array(bytes)])) : null
+  paintArtwork()
+}
+
 listen<Track | null>('music', ({ payload }) => {
   const wasShown = Boolean(track)
+  const albumChanged = albumKey(track) !== albumKey(payload)
   track = payload
   trackSyncedAt = Date.now()
+  if (albumChanged) loadArtwork()
   showCompactMusic()
   if (hovering && wasShown !== Boolean(track)) render()
   else if (!player.hidden) renderPlayer()
-})
-
-listen<number[] | null>('artwork', ({ payload }) => {
-  if (artworkUrl) URL.revokeObjectURL(artworkUrl)
-  artworkUrl = payload ? URL.createObjectURL(new Blob([new Uint8Array(payload)])) : null
-  paintArtwork()
 })
 
 document.querySelectorAll<HTMLButtonElement>('#controls button').forEach((button) => {

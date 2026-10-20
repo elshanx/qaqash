@@ -93,14 +93,18 @@ fn claude_app_is_frontmost() -> bool {
 const SPOTIFY_NOW_PLAYING: &str = r#"
 tell application "Spotify"
     if player state is stopped then return ""
-    return (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & ((duration of current track) / 1000 as text)
+    return (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & ((duration of current track) / 1000 as text) & tab & (artwork url of current track)
 end tell
 "#;
 
 const MUSIC_NOW_PLAYING: &str = r#"
 tell application "Music"
     if player state is stopped then return ""
-    return (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & (duration of current track as text)
+    set state to player state as text
+    try
+        return state & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & (duration of current track as text)
+    end try
+    return state & tab & "Apple Music Radio" & tab & "Live" & tab & "Radio" & tab & "0" & tab & "0"
 end tell
 "#;
 
@@ -151,6 +155,7 @@ fn query_player(player: &str, bundle_id: &std::ffi::CStr, script: &str) -> Value
         "album": fields[3],
         "position": seconds(fields[4]),
         "duration": seconds(fields[5]),
+        "artworkUrl": fields.get(6),
     })
 }
 
@@ -163,25 +168,21 @@ fn now_playing() -> Value {
     if music.is_null() { spotify } else { music }
 }
 
+fn watch_music(app: AppHandle) {
+    loop {
+        let _ = app.emit("music", now_playing());
+        thread::sleep(Duration::from_secs(2));
+    }
+}
+
+#[tauri::command]
 fn music_artwork() -> Option<Vec<u8>> {
+    if !app_is_running(c"com.apple.Music") {
+        return None;
+    }
     let path = std::env::temp_dir().join("peep-artwork");
     osascript(MUSIC_ARTWORK, &[path.to_str()?])?;
     std::fs::read(path).ok()
-}
-
-fn watch_music(app: AppHandle) {
-    let mut last_album = String::new();
-    loop {
-        let track = now_playing();
-        let album = format!("{}{}", track["app"], track["album"]);
-        if album != last_album {
-            last_album = album;
-            let artwork = if track["app"] == "Music" { music_artwork() } else { None };
-            let _ = app.emit("artwork", artwork);
-        }
-        let _ = app.emit("music", track);
-        thread::sleep(Duration::from_secs(2));
-    }
 }
 
 #[tauri::command]
@@ -237,7 +238,7 @@ fn serve(app: AppHandle) {
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![resize, decide, menu_bar_height, music_control])
+        .invoke_handler(tauri::generate_handler![resize, decide, menu_bar_height, music_control, music_artwork])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 

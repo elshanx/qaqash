@@ -27,8 +27,8 @@ Tauri 2 (Rust backend) + Vite + vanilla TypeScript frontend. Chosen over Electro
 ## Rules for working here
 - Run and test locally (`npm install`, `npm run tauri dev`). Prefer verifying the notch look on screen over assuming.
 - Do not edit `~/.claude/settings.json` without asking. Provide `claude-hooks.example.json` and let the user merge it.
-- Keep it offline-only. No telemetry, no network calls beyond 127.0.0.1.
-- Music (Spotify, Apple Music) is read and controlled with local AppleScript via `osascript`. Only query an app after `NSRunningApplication` confirms it is running, so Peep never launches a music app. No Spotify cover art (it would need a network fetch); Apple Music art is read locally.
+- Keep it offline-only. No telemetry, no network calls beyond 127.0.0.1. One exception the user approved: Spotify cover images load from `https://i.scdn.co` (checked in the frontend before use).
+- Music (Spotify, Apple Music) is read and controlled with local AppleScript via `osascript`. Only query an app after `NSRunningApplication` confirms it is running, so Peep never launches a music app. Apple Music art is read locally; Apple Music radio has no track info, so it shows as "Apple Music Radio".
 - Stay quiet while the Claude desktop app (`com.anthropic.claudefordesktop`) is frontmost: no prompts, no sounds.
 
 ## Build order
