@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { ask, content, detail, island, player, sessionList, status } from './dom'
 import { projectOf } from './hook-events'
 import { markHot } from './hover'
+import { wobble } from './liquid'
 import { morph, sleep } from './motion'
 import { renderPlayer } from './music'
 import { renderPrompt } from './prompts'
@@ -19,6 +20,7 @@ const size = (width: number, height: number) => {
   island.style.setProperty('--w', `${width}px`)
   island.style.setProperty('--h', `${height}px`)
   island.toggleAttribute('data-open', height > state.barHeight)
+  wobble(width, height)
   invoke('set_hit_area', { width, height })
 }
 

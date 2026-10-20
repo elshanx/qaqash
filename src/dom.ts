@@ -1,6 +1,8 @@
 const byId = (id: string) => document.getElementById(id)!
 
 export const island = byId('island')
+export const shape = byId('shape')
+export const drop = byId('drop')
 export const status = byId('status')
 export const content = byId('content')
 export const ask = byId('ask')

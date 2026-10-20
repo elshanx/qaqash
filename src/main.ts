@@ -1,5 +1,6 @@
 import './styles/base.css'
 import './styles/island.css'
+import './styles/liquid.css'
 import './styles/face.css'
 import './styles/prompt.css'
 import './styles/sessions.css'
