@@ -39,6 +39,11 @@ fn decide(pending: State<Pending>, id: u64, answer: Value) {
     }
 }
 
+#[tauri::command]
+fn forget(pending: State<Pending>, id: u64) {
+    pending.waiting.lock().unwrap().remove(&id);
+}
+
 fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -> Option<Value> {
     let pending = app.state::<Pending>();
     let id = pending.next_id.fetch_add(1, Ordering::Relaxed);
@@ -273,7 +278,7 @@ fn serve(app: AppHandle) {
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![resize, decide, menu_bar_height, music_control, music_artwork])
+        .invoke_handler(tauri::generate_handler![resize, decide, forget, menu_bar_height, music_control, music_artwork])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 

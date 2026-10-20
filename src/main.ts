@@ -429,9 +429,13 @@ const decide = async (allowed: boolean) => {
 
 const dropStale = (event: HookEvent) => {
   if (event.hook_event_name !== 'UserPromptSubmit' && event.hook_event_name !== 'Stop') return
-  const before = queue.length
-  queue = queue.filter((request) => request.event.session_id !== event.session_id)
-  if (queue.length !== before) render()
+  const stale = queue.filter((request) => request.event.session_id === event.session_id)
+  if (stale.length === 0) return
+  stale.forEach(({ id }) => {
+    invoke('forget', { id })
+    remove(id)
+  })
+  render()
 }
 
 allow.addEventListener('click', () => decide(true))
