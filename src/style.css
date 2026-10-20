@@ -129,3 +129,29 @@ button {
 #allow {
   background: #2f7d32;
 }
+
+#sessions {
+  margin: 0;
+  padding: 0 0 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#sessions[hidden] {
+  display: none;
+}
+
+#sessions li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#sessions span:last-child {
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

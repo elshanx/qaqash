@@ -91,6 +91,7 @@ fn main() {
             let ns_window = window.ns_window()? as *const objc2::runtime::AnyObject;
             unsafe {
                 let _: () = objc2::msg_send![&*ns_window, setLevel: 25isize];
+                let _: () = objc2::msg_send![&*ns_window, setAcceptsMouseMovedEvents: true];
             }
 
             window.show()?;
