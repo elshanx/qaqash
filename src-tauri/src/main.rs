@@ -138,11 +138,43 @@ fn app_is_running(bundle_id: &std::ffi::CStr) -> bool {
     })
 }
 
-fn query_player(player: &str, bundle_id: &std::ffi::CStr, script: &str) -> Value {
+struct AppleScript(*mut objc2::runtime::AnyObject);
+
+impl AppleScript {
+    fn new(source: &str) -> Option<Self> {
+        let source = std::ffi::CString::new(source).ok()?;
+        unsafe {
+            let string_class = objc2::runtime::AnyClass::get(c"NSString")?;
+            let script_class = objc2::runtime::AnyClass::get(c"NSAppleScript")?;
+            let text: *mut objc2::runtime::AnyObject = objc2::msg_send![string_class, stringWithUTF8String: source.as_ptr()];
+            let script: *mut objc2::runtime::AnyObject = objc2::msg_send![script_class, alloc];
+            let script: *mut objc2::runtime::AnyObject = objc2::msg_send![script, initWithSource: text];
+            (!script.is_null()).then_some(Self(script))
+        }
+    }
+
+    fn run(&self) -> Option<String> {
+        objc2::rc::autoreleasepool(|_| unsafe {
+            let mut error: *mut objc2::runtime::AnyObject = std::ptr::null_mut();
+            let result: *mut objc2::runtime::AnyObject = objc2::msg_send![&*self.0, executeAndReturnError: &mut error];
+            if result.is_null() {
+                return None;
+            }
+            let text: *mut objc2::runtime::AnyObject = objc2::msg_send![&*result, stringValue];
+            if text.is_null() {
+                return Some(String::new());
+            }
+            let utf8: *const std::ffi::c_char = objc2::msg_send![&*text, UTF8String];
+            Some(std::ffi::CStr::from_ptr(utf8).to_string_lossy().into_owned())
+        })
+    }
+}
+
+fn query_player(player: &str, bundle_id: &std::ffi::CStr, script: &AppleScript) -> Value {
     if !app_is_running(bundle_id) {
         return Value::Null;
     }
-    let Some(line) = osascript(script, &[]) else { return Value::Null };
+    let Some(line) = script.run() else { return Value::Null };
     let fields: Vec<&str> = line.split('\t').collect();
     if fields.len() < 6 {
         return Value::Null;
@@ -159,18 +191,21 @@ fn query_player(player: &str, bundle_id: &std::ffi::CStr, script: &str) -> Value
     })
 }
 
-fn now_playing() -> Value {
-    let spotify = query_player("Spotify", c"com.spotify.client", SPOTIFY_NOW_PLAYING);
+fn now_playing(spotify_script: &AppleScript, music_script: &AppleScript) -> Value {
+    let spotify = query_player("Spotify", c"com.spotify.client", spotify_script);
     if spotify["playing"] == true {
         return spotify;
     }
-    let music = query_player("Music", c"com.apple.Music", MUSIC_NOW_PLAYING);
+    let music = query_player("Music", c"com.apple.Music", music_script);
     if music.is_null() { spotify } else { music }
 }
 
 fn watch_music(app: AppHandle) {
+    let (Some(spotify_script), Some(music_script)) = (AppleScript::new(SPOTIFY_NOW_PLAYING), AppleScript::new(MUSIC_NOW_PLAYING)) else {
+        return;
+    };
     loop {
-        let _ = app.emit("music", now_playing());
+        let _ = app.emit("music", now_playing(&spotify_script, &music_script));
         thread::sleep(Duration::from_secs(2));
     }
 }
