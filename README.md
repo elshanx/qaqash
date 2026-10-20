@@ -38,6 +38,18 @@ Qaqash listens to Claude Code through [hooks](https://docs.claude.com/en/docs/cl
 
 If Qaqash isn't running, the hook does nothing and Claude Code behaves normally.
 
+## iPhone app
+
+The iPhone app lives in `ios/`. It needs [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`):
+
+```bash
+cd ios
+xcodegen generate
+open Qaqash.xcodeproj
+```
+
+Pick your phone and press Run. Then pair it from the Mac's menu bar icon → **Pair iPhone…**.
+
 ## How it works
 
 ```
@@ -59,6 +71,7 @@ Claude Code ── hook.sh ──> Qaqash (127.0.0.1:47831) ──> the island
 | `src-tauri/src/` | The Rust backend: hook server, window, music, phone link, menu bar |
 | `scripts/hook.sh` | The Claude Code hook |
 | `pair.html` | The iPhone pairing window |
+| `ios/` | The iPhone app and its Live Activity (SwiftUI) |
 
 ## Privacy
 
