@@ -38,6 +38,7 @@ type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 let queue: Ask[] = []
 const picks = new Map<string, string[]>()
 let hovering = false
+let lastStatus = 'peep'
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
 const ear = 12
@@ -113,6 +114,18 @@ const size = async (width: number, height: number) => {
   shrinkTimer = window.setTimeout(() => resizeWindow(width, height), springMs)
 }
 
+const projectOf = (event: HookEvent): string =>
+  event.cwd?.split('/').pop() || event.session_id?.slice(0, 8) || 'Claude'
+
+const showStatus = (text: string) => {
+  if (status.textContent === text) return
+  status.textContent = text
+  status.animate(
+    [{ opacity: 0, transform: 'translateY(4px)', filter: 'blur(3px)' }, { opacity: 0.8, transform: 'none', filter: 'none' }],
+    { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+  )
+}
+
 const sessionRow = ({ name, state, mood }: { name: string, state: string, mood: Mood }, index: number) => {
   const row = document.createElement('li')
   row.dataset.mood = mood
@@ -125,6 +138,7 @@ const sessionRow = ({ name, state, mood }: { name: string, state: string, mood: 
 const render = async () => {
   const [first] = queue
   const showSessions = !first && hovering && sessions.size > 0
+  showStatus(first ? projectOf(first.event) : lastStatus)
   if (first) {
     const more = queue.length > 1 ? ` (+${queue.length - 1})` : ''
     const isQuestion = first.kind === 'question'
@@ -152,7 +166,7 @@ const track = (event: HookEvent) => {
   if (event.hook_event_name === 'SessionEnd') {
     sessions.delete(event.session_id)
   } else {
-    const name = event.cwd?.split('/').pop() || event.session_id.slice(0, 8)
+    const name = projectOf(event)
     sessions.set(event.session_id, { name, state: describe(event), mood: moods[event.hook_event_name] ?? 'thinking', seen: Date.now() })
   }
   if (hovering) render()
@@ -204,14 +218,8 @@ pill.addEventListener('mouseleave', () => {
 })
 
 listen<HookEvent>('status', ({ payload }) => {
-  const text = describe(payload)
-  if (status.textContent !== text) {
-    status.textContent = text
-    status.animate(
-      [{ opacity: 0, transform: 'translateY(4px)', filter: 'blur(3px)' }, { opacity: 0.8, transform: 'none', filter: 'none' }],
-      { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
-    )
-  }
+  lastStatus = describe(payload)
+  if (queue.length === 0) showStatus(lastStatus)
   dropStale(payload)
   track(payload)
   setMood(moods[payload.hook_event_name] ?? 'thinking')
