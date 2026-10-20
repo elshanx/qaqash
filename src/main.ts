@@ -3,6 +3,7 @@ import { listen } from '@tauri-apps/api/event'
 
 type HookEvent = {
   hook_event_name: string
+  session_id?: string
   tool_name?: string
   tool_input?: Record<string, unknown>
   message?: string
@@ -18,7 +19,7 @@ const ask = document.getElementById('ask')!
 const tool = document.getElementById('tool')!
 const detail = document.getElementById('detail')!
 
-let currentId: number | null = null
+let queue: PermissionRequest[] = []
 
 const describe = (event: HookEvent): string => {
   switch (event.hook_event_name) {
@@ -33,20 +34,33 @@ const describe = (event: HookEvent): string => {
 const summarize = (input: Record<string, unknown> = {}): string =>
   String(input.command ?? input.file_path ?? input.url ?? JSON.stringify(input, null, 2))
 
-const showRequest = async ({ id, event }: PermissionRequest) => {
-  currentId = id
-  tool.textContent = `Allow ${event.tool_name ?? 'tool'}?`
-  detail.textContent = summarize(event.tool_input)
+const render = async () => {
+  const [first] = queue
+  if (!first) {
+    ask.hidden = true
+    await invoke('resize', { width: 370, height: 38 })
+    return
+  }
+  const more = queue.length > 1 ? ` (+${queue.length - 1})` : ''
+  tool.textContent = `Allow ${first.event.tool_name ?? 'tool'}?${more}`
+  detail.textContent = summarize(first.event.tool_input)
   ask.hidden = false
   await invoke('resize', { width: 460, height: 210 })
 }
 
 const decide = async (allow: boolean) => {
-  if (currentId === null) return
-  await invoke('decide', { id: currentId, allow })
-  currentId = null
-  ask.hidden = true
-  await invoke('resize', { width: 370, height: 38 })
+  const [first] = queue
+  if (!first) return
+  await invoke('decide', { id: first.id, allow })
+  queue = queue.filter(({ id }) => id !== first.id)
+  await render()
+}
+
+const dropStale = (event: HookEvent) => {
+  if (event.hook_event_name !== 'UserPromptSubmit' && event.hook_event_name !== 'Stop') return
+  const before = queue.length
+  queue = queue.filter((request) => request.event.session_id !== event.session_id)
+  if (queue.length !== before) render()
 }
 
 document.getElementById('allow')!.addEventListener('click', () => decide(true))
@@ -54,6 +68,10 @@ document.getElementById('deny')!.addEventListener('click', () => decide(false))
 
 listen<HookEvent>('status', ({ payload }) => {
   status.textContent = describe(payload)
+  dropStale(payload)
 })
 
-listen<PermissionRequest>('permission', ({ payload }) => showRequest(payload))
+listen<PermissionRequest>('permission', ({ payload }) => {
+  queue = [...queue, payload]
+  render()
+})
