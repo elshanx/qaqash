@@ -1,6 +1,7 @@
 mod hooks;
 mod macos;
 mod music;
+mod phone;
 mod sessions;
 mod window;
 
@@ -10,7 +11,7 @@ use tauri::{ActivationPolicy, Manager};
 fn main() {
     tauri::Builder::default()
         .manage(hooks::Pending::default())
-        .invoke_handler(tauri::generate_handler![window::set_hit_area, window::menu_bar_height, hooks::decide, hooks::forget, music::music_control, music::music_artwork, sessions::open_session])
+        .invoke_handler(tauri::generate_handler![window::set_hit_area, window::menu_bar_height, hooks::decide, hooks::forget, music::music_control, music::music_artwork, sessions::open_session, phone::pairing_code, phone::pairing_text, phone::nudge_target, phone::set_nudge_target])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
@@ -29,7 +30,9 @@ fn main() {
             let handle = app.handle().clone();
             let music_handle = handle.clone();
             let hover_handle = handle.clone();
+            let phone_handle = handle.clone();
             thread::spawn(move || hooks::serve(handle));
+            thread::spawn(move || phone::serve(phone_handle));
             thread::spawn(move || music::watch_music(music_handle));
             thread::spawn(move || window::watch_hover(hover_handle, window));
             Ok(())

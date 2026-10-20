@@ -8,6 +8,7 @@ use std::time::Duration;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager, State};
 use crate::macos::claude_app_is_frontmost;
+use crate::phone;
 
 #[derive(Default)]
 pub struct Pending {
@@ -15,16 +16,21 @@ pub struct Pending {
     waiting: Mutex<HashMap<u64, Sender<Value>>>,
 }
 
-#[tauri::command]
-pub fn decide(pending: State<Pending>, id: u64, answer: Value) {
+pub fn resolve(pending: &Pending, id: u64, answer: Value) {
     if let Some(sender) = pending.waiting.lock().unwrap().remove(&id) {
         let _ = sender.send(answer);
     }
 }
 
 #[tauri::command]
+pub fn decide(pending: State<Pending>, id: u64, answer: Value) {
+    resolve(&pending, id, answer);
+}
+
+#[tauri::command]
 pub fn forget(pending: State<Pending>, id: u64) {
     pending.waiting.lock().unwrap().remove(&id);
+    phone::ask_closed(id);
 }
 
 fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -> Option<Value> {
@@ -33,13 +39,14 @@ fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -
     let (sender, receiver) = channel();
     pending.waiting.lock().unwrap().insert(id, sender);
     play("Ping");
-    let _ = app.emit("ask", json!({ "id": id, "kind": kind, "event": event }));
+    let ask = json!({ "id": id, "kind": kind, "event": event });
+    let _ = app.emit("ask", &ask);
+    phone::ask_opened(&ask);
 
     let answer = receiver.recv_timeout(timeout).ok();
     pending.waiting.lock().unwrap().remove(&id);
-    if answer.is_none() {
-        let _ = app.emit("expired", id);
-    }
+    phone::ask_closed(id);
+    let _ = app.emit(if answer.is_some() { "resolved" } else { "expired" }, id);
     answer
 }
 
@@ -88,6 +95,7 @@ pub fn serve(app: AppHandle) {
                 if event["hook_event_name"] == "Stop" && !in_claude_app {
                     play("Glass");
                 }
+                phone::status(&event);
                 let _ = app.emit("status", event);
                 String::new()
             };

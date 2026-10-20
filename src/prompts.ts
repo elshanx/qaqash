@@ -138,9 +138,12 @@ export const startPrompts = () => {
     render()
   })
 
-  listen<number>('expired', ({ payload }) => {
+  const close = ({ payload }: { payload: number }) => {
+    if (!state.queue.some(({ id }) => id === payload)) return
     remove(payload)
     setMood('thinking')
     render()
-  })
+  }
+  listen<number>('expired', close)
+  listen<number>('resolved', close)
 }
