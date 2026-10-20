@@ -21,16 +21,17 @@ Everything runs on your Mac. No account, no cloud, no telemetry.
 
 ## Requirements
 
-- macOS 14 or later, ideally a Mac with a notch
-- [Rust](https://rustup.rs) and [Node.js](https://nodejs.org) 20+
+- macOS 15 or later, ideally a Mac with a notch
+- Xcode 16 or later (for Swift 6)
 - Claude Code
 
 ## Run it
 
 ```bash
-npm install
-npm run tauri dev
+scripts/run.sh
 ```
+
+This builds `build/Qaqash.app`, signs it and opens it. Use `scripts/run.sh release` for a faster, smaller build, and `swift test` to run the checks. The first time, macOS asks to let Qaqash control Spotify, Music and System Events (for the VS Code file name), and to find devices on your local network (for the iPhone app).
 
 ## Connect it to Claude Code
 
@@ -66,11 +67,10 @@ Claude Code ── hook.sh ──> Qaqash (127.0.0.1:47831) ──> the island
 
 | Path | What's there |
 |---|---|
-| `src/` | The island's frontend (TypeScript), one file per feature |
-| `src/styles/` | Styles, one file per feature |
-| `src-tauri/src/` | The Rust backend: hook server, window, music, phone link, menu bar |
+| `Sources/Qaqash/` | The Mac app (Swift + SwiftUI), one file per feature |
+| `Tests/QaqashTests/` | Checks for the diff and the pairing code |
 | `scripts/hook.sh` | The Claude Code hook |
-| `pair.html` | The iPhone pairing window |
+| `scripts/run.sh` | Build, sign and launch the app |
 | `ios/` | The iPhone app and its Live Activity (SwiftUI) |
 
 ## Privacy

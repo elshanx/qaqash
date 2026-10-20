@@ -1,5 +1,0 @@
-{
-  "identifier": "default",
-  "windows": ["main", "pair"],
-  "permissions": ["core:default"]
-}
