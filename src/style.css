@@ -500,7 +500,7 @@ button:active {
 
 #pill[data-music] #face,
 #pill[data-music] #status {
-  opacity: 0;
+  opacity: 0 !important;
 }
 
 #face {
