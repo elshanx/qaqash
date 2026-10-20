@@ -1,17 +1,19 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Condvar, Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
-use crate::hooks::{resolve, Pending};
+use crate::hooks::{resolve, wait_for_user, Pending};
 
 const PORT: u16 = 47832;
 const LONG_POLL: Duration = Duration::from_secs(25);
 const KEPT_EVENTS: usize = 200;
+const PAIR_WAIT: Duration = Duration::from_secs(60);
 
 struct Feed {
     seq: u64,
@@ -22,6 +24,7 @@ struct Feed {
 
 static FEED: Mutex<Feed> = Mutex::new(Feed { seq: 0, events: VecDeque::new(), asks: BTreeMap::new(), sessions: BTreeMap::new() });
 static CHANGED: Condvar = Condvar::new();
+static PAIRING: AtomicBool = AtomicBool::new(false);
 static SETTINGS: OnceLock<Mutex<Settings>> = OnceLock::new();
 
 #[derive(Clone)]
@@ -172,7 +175,46 @@ fn reply(request: tiny_http::Request, code: u16, body: Value) {
     let _ = request.respond(tiny_http::Response::from_string(body.to_string()).with_status_code(code).with_header(header));
 }
 
+fn pair_code(pin: &str) -> String {
+    let number = u32::from_str_radix(pin.get(..8).unwrap_or("0"), 16).unwrap_or(0);
+    format!("{:04}", number % 10_000)
+}
+
+fn pair(app: &AppHandle, mut request: tiny_http::Request) {
+    if PAIRING.swap(true, Ordering::SeqCst) {
+        return reply(request, 429, json!({ "error": "already pairing" }));
+    }
+    let mut body = String::new();
+    let _ = request.as_reader().read_to_string(&mut body);
+    let asked: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
+    let device: String = asked["device"].as_str().unwrap_or("iPhone").chars().take(40).collect();
+    let Some(settings) = settings() else {
+        PAIRING.store(false, Ordering::SeqCst);
+        return reply(request, 503, json!({ "error": "not ready" }));
+    };
+    let event = json!({ "device": device, "code": pair_code(&settings.pin) });
+    let answer = wait_for_user(app, "pair", event, PAIR_WAIT);
+    PAIRING.store(false, Ordering::SeqCst);
+    if answer == Some(Value::Bool(true)) {
+        let name = local_host_name();
+        reply(request, 200, json!({ "token": settings.token, "name": name, "host": format!("{name}.local") }))
+    } else {
+        reply(request, 403, json!({ "error": "declined" }))
+    }
+}
+
+fn advertise() {
+    let name = local_host_name();
+    let script = format!(
+        "dns-sd -R \"$1\" _qaqash._tcp local {PORT} \"host=$1.local\" >/dev/null & while kill -0 $PPID 2>/dev/null; do sleep 5; done; kill $!"
+    );
+    let _ = Command::new("sh").args(["-c", &script, "sh", &name]).spawn();
+}
+
 fn handle(app: &AppHandle, mut request: tiny_http::Request, token: &str) {
+    if request.method() == &tiny_http::Method::Post && request.url() == "/pair" {
+        return pair(app, request);
+    }
     if !authorized(&request, token) {
         return reply(request, 401, json!({ "error": "not paired" }));
     }
@@ -211,6 +253,7 @@ pub fn serve(app: AppHandle) {
     let token = settings.token.clone();
     let _ = SETTINGS.set(Mutex::new(settings));
     let Ok(server) = tiny_http::Server::https(("0.0.0.0", PORT), config) else { return };
+    advertise();
     for request in server.incoming_requests() {
         let app = app.clone();
         let token = token.clone();

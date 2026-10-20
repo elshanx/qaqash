@@ -48,7 +48,7 @@ xcodegen generate
 open Qaqash.xcodeproj
 ```
 
-Pick your phone and press Run. Then pair it from the Mac's menu bar icon → **Pair iPhone…**.
+Pick your phone and press Run. The app finds your Mac on the Wi-Fi: tap it, check that the 4-digit code matches the one on the island, and click ✓ on the Mac. Scanning the QR code from the menu bar icon → **Pair iPhone…** also works.
 
 ## How it works
 

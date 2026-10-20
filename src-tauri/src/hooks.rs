@@ -33,7 +33,7 @@ pub fn forget(pending: State<Pending>, id: u64) {
     phone::ask_closed(id);
 }
 
-fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -> Option<Value> {
+pub fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -> Option<Value> {
     let pending = app.state::<Pending>();
     let id = pending.next_id.fetch_add(1, Ordering::Relaxed);
     let (sender, receiver) = channel();
@@ -41,7 +41,9 @@ fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -
     play("Ping");
     let ask = json!({ "id": id, "kind": kind, "event": event });
     let _ = app.emit("ask", &ask);
-    phone::ask_opened(&ask);
+    if kind != "pair" {
+        phone::ask_opened(&ask);
+    }
 
     let answer = receiver.recv_timeout(timeout).ok();
     pending.waiting.lock().unwrap().remove(&id);

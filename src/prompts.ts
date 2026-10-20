@@ -109,9 +109,22 @@ const renderQuestionStep = (request: Ask, more: string) => {
   footer.hidden = next.hidden && back.hidden
 }
 
+const renderPairing = (request: Ask) => {
+  icon.dataset.kind = 'permission'
+  icon.textContent = '⇄'
+  kicker.textContent = 'Wants to pair with this Mac'
+  tool.textContent = request.event.device ?? 'iPhone'
+  detail.textContent = `Code ${request.event.code}. Allow only if your iPhone shows the same code.`
+  detail.hidden = false
+  actions.hidden = false
+  questionList.hidden = true
+  footer.hidden = true
+}
+
 export const renderPrompt = (request: Ask) => {
   const more = state.queue.length > 1 ? ` · +${state.queue.length - 1} more` : ''
-  if (request.kind === 'question') renderQuestionStep(request, more)
+  if (request.kind === 'pair') renderPairing(request)
+  else if (request.kind === 'question') renderQuestionStep(request, more)
   else renderPermission(request, more)
 }
 

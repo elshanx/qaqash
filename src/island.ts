@@ -57,7 +57,7 @@ export const render = async () => {
   }
   content.removeAttribute('data-leaving')
   clearTimeout(bumpTimer)
-  showStatus(first ? projectOf(first.event) : state.lastStatus)
+  showStatus(first ? (first.kind === 'pair' ? 'Pairing' : projectOf(first.event)) : state.lastStatus)
   if (first) renderPrompt(first)
   if (showPlayer) {
     player.toggleAttribute('data-entering', player.hidden)

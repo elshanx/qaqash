@@ -26,6 +26,7 @@ targets:
         NSCameraUsageDescription: Scan the pairing code shown on your Mac.
         NSFaceIDUsageDescription: Confirm before letting Claude run something on your Mac.
         NSLocalNetworkUsageDescription: Qaqash talks to your Mac over your Wi-Fi.
+        NSBonjourServices: [_qaqash._tcp]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:

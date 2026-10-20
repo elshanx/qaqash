@@ -49,12 +49,13 @@ final class Island: ObservableObject {
     func pair(_ pairing: Pairing) {
         pairing.save()
         self.pairing = pairing
+        stop()
         seq = 0
         start()
     }
 
     func unpair() {
-        polling?.cancel()
+        stop()
         Pairing.forget()
         pairing = nil
         asks = []

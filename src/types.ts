@@ -28,8 +28,8 @@ export type Track = {
 
 export type Ask = {
   id: number
-  kind: 'permission' | 'question'
-  event: HookEvent
+  kind: 'permission' | 'question' | 'pair'
+  event: HookEvent & { device?: string, code?: string }
 }
 
 export type Mood = 'idle' | 'thinking' | 'needs' | 'done'
