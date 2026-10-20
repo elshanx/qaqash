@@ -73,6 +73,23 @@ fn answer_question(app: &AppHandle, event: Value) -> String {
     json!({ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "allow", "updatedInput": input } }).to_string()
 }
 
+fn claude_app_is_frontmost() -> bool {
+    objc2::rc::autoreleasepool(|_| unsafe {
+        let Some(workspace_class) = objc2::runtime::AnyClass::get(c"NSWorkspace") else { return false };
+        let workspace: *mut objc2::runtime::AnyObject = objc2::msg_send![workspace_class, sharedWorkspace];
+        let app: *mut objc2::runtime::AnyObject = objc2::msg_send![&*workspace, frontmostApplication];
+        if app.is_null() {
+            return false;
+        }
+        let bundle_id: *mut objc2::runtime::AnyObject = objc2::msg_send![&*app, bundleIdentifier];
+        if bundle_id.is_null() {
+            return false;
+        }
+        let utf8: *const std::ffi::c_char = objc2::msg_send![&*bundle_id, UTF8String];
+        std::ffi::CStr::from_ptr(utf8).to_bytes() == b"com.anthropic.claudefordesktop"
+    })
+}
+
 fn play(sound: &str) {
     let _ = Command::new("afplay").arg(format!("/System/Library/Sounds/{sound}.aiff")).spawn();
 }
@@ -85,12 +102,15 @@ fn serve(app: AppHandle) {
             let mut body = String::new();
             let _ = request.as_reader().read_to_string(&mut body);
             let event: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
-            let reply = if event["hook_event_name"] == "PermissionRequest" {
+            let in_claude_app = claude_app_is_frontmost();
+            let is_permission = event["hook_event_name"] == "PermissionRequest";
+            let is_question = event["hook_event_name"] == "PreToolUse" && event["tool_name"] == "AskUserQuestion";
+            let reply = if is_permission && !in_claude_app {
                 answer_permission(&app, event)
-            } else if event["hook_event_name"] == "PreToolUse" && event["tool_name"] == "AskUserQuestion" {
+            } else if is_question && !in_claude_app {
                 answer_question(&app, event)
             } else {
-                if event["hook_event_name"] == "Stop" {
+                if event["hook_event_name"] == "Stop" && !in_claude_app {
                     play("Glass");
                 }
                 let _ = app.emit("status", event);

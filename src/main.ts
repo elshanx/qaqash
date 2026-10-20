@@ -84,6 +84,7 @@ const describe = (event: HookEvent): string => {
     case 'UserPromptSubmit': return 'Thinking…'
     case 'PreToolUse': return event.tool_name ?? 'Working…'
     case 'Notification': return event.message ?? 'Needs you'
+    case 'PermissionRequest': return 'Needs you'
     case 'Stop': return 'Done'
     default: return event.hook_event_name
   }
