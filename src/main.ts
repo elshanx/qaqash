@@ -35,7 +35,8 @@ const deny = document.getElementById('deny')!
 let queue: Ask[] = []
 const picks = new Map<string, string[]>()
 let hovering = false
-const sessions = new Map<string, { name: string, state: string }>()
+const sessions = new Map<string, { name: string, state: string, seen: number }>()
+const staleAfter = 30 * 60 * 1000
 
 const describe = (event: HookEvent): string => {
   switch (event.hook_event_name) {
@@ -130,7 +131,7 @@ const track = (event: HookEvent) => {
     sessions.delete(event.session_id)
   } else {
     const name = event.cwd?.split('/').pop() || event.session_id.slice(0, 8)
-    sessions.set(event.session_id, { name, state: describe(event) })
+    sessions.set(event.session_id, { name, state: describe(event), seen: Date.now() })
   }
   if (hovering) render()
 }
@@ -161,6 +162,14 @@ const dropStale = (event: HookEvent) => {
 
 allow.addEventListener('click', () => decide(true))
 deny.addEventListener('click', () => decide(false))
+
+setInterval(() => {
+  const cutoff = Date.now() - staleAfter
+  sessions.forEach(({ seen }, id) => {
+    if (seen < cutoff) sessions.delete(id)
+  })
+  if (hovering) render()
+}, 60 * 1000)
 
 pill.addEventListener('mouseenter', () => {
   hovering = true
