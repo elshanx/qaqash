@@ -7,16 +7,22 @@ fn parent_of(pid: i32) -> Option<i32> {
 }
 
 #[tauri::command]
-pub fn open_session(pid: i32) -> Result<(), String> {
+pub fn session_app(pid: i32) -> Option<String> {
     let mut current = pid;
     while current > 1 {
         if let Some(bundle_id) = app_bundle_id(current) {
-            Command::new("open").args(["-b", &bundle_id]).status().map_err(|error| error.to_string())?;
-            return Ok(());
+            return Some(bundle_id);
         }
-        current = parent_of(current).ok_or("process ended")?;
+        current = parent_of(current)?;
     }
-    Err("no app found".into())
+    None
+}
+
+#[tauri::command]
+pub fn open_session(pid: i32) -> Result<(), String> {
+    let bundle_id = session_app(pid).ok_or("no app found")?;
+    Command::new("open").args(["-b", &bundle_id]).status().map_err(|error| error.to_string())?;
+    Ok(())
 }
 
 fn line_of(path: &str, needles: &[String]) -> usize {

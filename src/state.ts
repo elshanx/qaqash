@@ -9,6 +9,7 @@ export const state = {
   trackSyncedAt: 0,
   barHeight: 33,
   activity: null as Activity | null,
+  vscode: null as { file: string, project: string } | null,
 }
 
 export const picks = new Map<string, string[]>()

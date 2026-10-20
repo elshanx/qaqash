@@ -90,3 +90,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+#sessions li[data-mood='vscode']::before {
+  border-radius: 2px;
+  background: #23a9f2;
+}

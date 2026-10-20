@@ -38,4 +38,4 @@ export type Activity = { event: HookEvent, diff: DiffLine[] | null, steps: strin
 
 export type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 
-export type Session = { name: string, state: string, mood: Mood, seen: number, pid?: number }
+export type Session = { name: string, state: string, mood: Mood, seen: number, pid?: number, app?: string }

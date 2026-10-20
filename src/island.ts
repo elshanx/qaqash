@@ -9,6 +9,7 @@ import { renderPlayer } from './music'
 import { renderPrompt } from './prompts'
 import { sessionRow } from './sessions'
 import { sessions, state } from './state'
+import { vscodeRow } from './vscode'
 
 const collapsedWidth = 330
 const openWidth = 460
@@ -48,7 +49,7 @@ export const render = async () => {
   const id = ++renderId
   const [first] = state.queue
   const showActivity = !first && Boolean(state.activity?.diff)
-  const showSessions = !first && !showActivity && state.hovering && sessions.size > 0
+  const showSessions = !first && !showActivity && state.hovering && (sessions.size > 0 || Boolean(state.vscode))
   const showPlayer = !first && !showActivity && state.hovering && Boolean(state.track)
   const open = Boolean(first) || showSessions || showPlayer || showActivity
   if (!open && island.hasAttribute('data-open')) {
@@ -67,7 +68,11 @@ export const render = async () => {
   }
   if (showSessions) {
     sessionList.toggleAttribute('data-entering', sessionList.hidden)
-    sessionList.replaceChildren(...[...sessions.values()].map(sessionRow))
+    const offset = state.vscode ? 1 : 0
+    sessionList.replaceChildren(
+      ...(state.vscode ? [vscodeRow(state.vscode)] : []),
+      ...[...sessions.values()].map((session, index) => sessionRow(session, index + offset)),
+    )
   }
   if (showActivity) renderActivity()
   ask.hidden = !first

@@ -3,10 +3,11 @@ import { describe, moodOf, projectOf } from './hook-events'
 import { render } from './island'
 import { sessions, state } from './state'
 import type { HookEvent, Session } from './types'
+import { vscodeId } from './vscode'
 
 const staleAfter = 30 * 60 * 1000
 
-export const sessionRow = ({ name, state: activity, mood, pid }: Session, index: number) => {
+export const sessionRow = ({ name, state: activity, mood, pid, app }: Session, index: number) => {
   const row = document.createElement('li')
   row.dataset.mood = mood
   if (pid) {
@@ -15,7 +16,7 @@ export const sessionRow = ({ name, state: activity, mood, pid }: Session, index:
   }
   row.style.setProperty('--i', String(index))
   row.append(Object.assign(document.createElement('span'), { textContent: name }))
-  row.append(Object.assign(document.createElement('span'), { textContent: activity }))
+  row.append(Object.assign(document.createElement('span'), { textContent: app === vscodeId ? `${activity} · VS Code` : activity }))
   return row
 }
 
@@ -24,14 +25,23 @@ export const trackSession = (event: HookEvent) => {
   if (event.hook_event_name === 'SessionEnd') {
     sessions.delete(event.session_id)
   } else {
-    const known = sessions.get(event.session_id)
-    sessions.set(event.session_id, {
+    const id = event.session_id
+    const known = sessions.get(id)
+    const pid = event.qaqash_pid ?? known?.pid
+    sessions.set(id, {
       name: known?.name ?? projectOf(event),
       state: describe(event),
       mood: moodOf(event),
       seen: Date.now(),
-      pid: event.qaqash_pid ?? known?.pid,
+      pid,
+      app: known?.app,
     })
+    if (pid && pid !== known?.pid) {
+      invoke<string | null>('session_app', { pid }).then((app) => {
+        const session = sessions.get(id)
+        if (session && app) session.app = app
+      })
+    }
   }
   if (state.hovering) render()
 }
