@@ -3,6 +3,8 @@ import SwiftUI
 struct Run {
     var steps: [String] = []
     var done = false
+    var command: String?
+    var output: [String] = []
 }
 
 struct Activity {
@@ -15,11 +17,29 @@ func readHunks(_ event: HookEvent) -> [Hunk] {
     hunksOf(event, readFile(event.filePath))
 }
 
+private func outputOf(_ event: HookEvent) -> [String] {
+    let response = event.raw["tool_response"] as? JSON ?? [:]
+    let text = [response["stdout"], response["stderr"]].compactMap { $0 as? String }.joined(separator: "\n")
+    return Array(text.split(separator: "\n").map { String($0) }.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.suffix(5))
+}
+
 private func nextRun(_ event: HookEvent, _ run: Run) -> Run? {
-    if event.name == "PreToolUse", let tool = event.toolName, tool != "AskUserQuestion" {
-        return Run(steps: run.steps.last == tool ? run.steps : Array((run.steps + [tool]).suffix(6)))
+    var run = run
+    switch event.name {
+    case "PreToolUse":
+        guard let tool = event.toolName, tool != "AskUserQuestion" else { return nil }
+        if run.steps.last != tool { run.steps = Array((run.steps + [tool]).suffix(6)) }
+        run.done = false
+    case "PostToolUse":
+        guard event.toolName == "Bash" else { return nil }
+        run.command = event.input["command"] as? String
+        run.output = outputOf(event)
+    case "Stop":
+        run.done = true
+    default:
+        return nil
     }
-    return event.name == "Stop" ? Run(steps: run.steps, done: true) : nil
+    return run
 }
 
 extension AppState {
@@ -83,14 +103,15 @@ struct ActivityView: View {
             .frame(width: 104, alignment: .leading)
             .padding(.top, 4)
             .padding(.leading, 2)
-            code(unsaved: !run.done && changesFiles(run.steps.last))
+            code(run)
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.top, 6)
         .padding(.bottom, 2)
     }
 
-    private func code(unsaved: Bool) -> some View {
+    private func code(_ run: Run) -> some View {
+        let unsaved = !run.done && changesFiles(run.steps.last)
         let name = fileOf(activity.event)
         let language = name.contains(".") ? String(name.split(separator: ".").last!.prefix(2)).uppercased() : ""
         let path = activity.event.filePath ?? ""
@@ -111,7 +132,8 @@ struct ActivityView: View {
                 .padding(.horizontal, 12)
                 .frame(height: 30)
                 .background(Color.field)
-                DiffView(hunks: activity.hunks, typing: activity.id, height: 280)
+                DiffView(hunks: activity.hunks, typing: activity.id, height: run.command == nil ? 280 : 200)
+                if let command = run.command { Terminal(command: command, output: run.output).transition(.rise) }
             }
             .frame(maxHeight: .infinity, alignment: .top)
             .background(Color(hex: 0x121214))
@@ -135,6 +157,31 @@ private struct CodeStyle: ButtonStyle {
                 .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(hovering ? 0.18 : 0), lineWidth: 1) }
                 .onHover { hovering = $0 }
         }
+    }
+}
+
+private struct Terminal: View {
+    var command: String
+    var output: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("$ \(command)").foregroundStyle(.white.opacity(0.85))
+            ForEach(Array(output.enumerated()), id: \.offset) { Text($1).foregroundStyle(color($1)) }
+        }
+        .font(mono)
+        .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.field)
+    }
+
+    private func color(_ line: String) -> Color {
+        let lower = line.lowercased()
+        if ["fail", "error", "✗"].contains(where: lower.contains) { return .qRed }
+        if ["pass", "✓", "✔"].contains(where: lower.contains) { return .qGreen }
+        return .white.opacity(0.55)
     }
 }
 

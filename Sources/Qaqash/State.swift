@@ -78,6 +78,7 @@ struct Ask: Identifiable {
     }
 
     func receive(_ event: HookEvent) {
+        guard event.name != "PostToolUse" else { return withAnimation(.morph) { trackActivity(event) } }
         withAnimation(.morph) {
             lastStatus = describe(event)
             dropStale(event)

@@ -21,6 +21,17 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "hooks": [

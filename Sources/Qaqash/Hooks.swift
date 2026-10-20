@@ -58,7 +58,7 @@ enum Hooks {
         if name == "PermissionRequest" && !quiet { return answerPermission(event) }
         if name == "PreToolUse" && event["tool_name"] as? String == "AskUserQuestion" && !quiet { return answerQuestion(event) }
         if name == "Stop" && !quiet { play("Glass") }
-        phone.status(event)
+        if name != "PostToolUse" { phone.status(event) }
         DispatchQueue.main.async { state.receive(HookEvent(raw: event)) }
         return Data()
     }
