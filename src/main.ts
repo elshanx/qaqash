@@ -17,6 +17,16 @@ type Question = {
   multiSelect?: boolean
 }
 
+type Track = {
+  app: 'Spotify' | 'Music'
+  playing: boolean
+  title: string
+  artist: string
+  album: string
+  position: number
+  duration: number
+}
+
 type Ask = {
   id: number
   kind: 'permission' | 'question'
@@ -39,6 +49,11 @@ const actions = document.getElementById('actions')!
 const footer = document.getElementById('footer')!
 const back = document.getElementById('back')!
 const next = document.getElementById('next') as HTMLButtonElement
+const player = document.getElementById('player')!
+const toggle = document.getElementById('toggle')!
+const progress = document.getElementById('progress')!
+const elapsed = document.getElementById('elapsed')!
+const remaining = document.getElementById('remaining')!
 
 type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 
@@ -47,6 +62,9 @@ const picks = new Map<string, string[]>()
 let step = 0
 let hovering = false
 let lastStatus = 'peep'
+let track: Track | null = null
+let trackSyncedAt = 0
+let artworkUrl: string | null = null
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
 const spring = (response: number, dampingRatio: number) => {
@@ -106,6 +124,47 @@ const moods: Record<string, Mood> = {
 
 const setMood = (mood: Mood) => {
   pill.dataset.mood = queue.length > 0 ? 'needs' : mood
+  showCompactMusic()
+}
+
+const claudeIsBusy = () => pill.dataset.mood === 'thinking' || pill.dataset.mood === 'needs'
+
+const showCompactMusic = () => {
+  pill.toggleAttribute('data-music', Boolean(track?.playing) && !claudeIsBusy())
+}
+
+const hueOf = (text: string) => [...text].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7)
+
+const paintArtwork = () => {
+  document.querySelectorAll<HTMLElement>('.art').forEach((element) => {
+    element.style.setProperty('--hue', String(hueOf(track?.album ?? '')))
+    if (artworkUrl) element.style.setProperty('--art', `url(${artworkUrl})`)
+    else element.style.removeProperty('--art')
+  })
+  pill.style.setProperty('--tint', `hsl(${hueOf(track?.album ?? '')} 75% 65%)`)
+}
+
+const clock = (totalSeconds: number) => {
+  const whole = Math.max(0, Math.floor(totalSeconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
+const updateProgress = () => {
+  if (!track) return
+  const playedFor = track.playing ? (Date.now() - trackSyncedAt) / 1000 : 0
+  const position = Math.min(track.position + playedFor, track.duration)
+  elapsed.textContent = clock(position)
+  remaining.textContent = `-${clock(track.duration - position)}`
+  progress.style.setProperty('--progress', String(track.duration ? position / track.duration : 0))
+}
+
+const renderPlayer = () => {
+  if (!track) return
+  document.getElementById('title')!.textContent = track.title
+  document.getElementById('artist')!.textContent = track.artist
+  toggle.toggleAttribute('data-playing', track.playing)
+  player.toggleAttribute('data-playing', track.playing)
+  updateProgress()
 }
 
 const summarize = (input: Record<string, unknown> = {}): string =>
@@ -168,7 +227,6 @@ const renderPermission = (request: Ask, more: string) => {
   tool.textContent = request.event.tool_name ?? 'a tool'
   detail.textContent = summarize(request.event.tool_input)
   detail.hidden = false
-  detail.toggleAttribute('data-overflowing', detail.scrollHeight > 72)
   actions.hidden = false
   questionList.hidden = true
   footer.hidden = true
@@ -246,7 +304,8 @@ const render = async () => {
   const id = ++renderId
   const [first] = queue
   const showSessions = !first && hovering && sessions.size > 0
-  const open = Boolean(first) || showSessions
+  const showPlayer = !first && hovering && Boolean(track)
+  const open = Boolean(first) || showSessions || showPlayer
   if (!open && pill.hasAttribute('data-open')) {
     content.setAttribute('data-leaving', '')
     await sleep(140)
@@ -260,16 +319,22 @@ const render = async () => {
     if (first.kind === 'question') renderQuestionStep(first, more)
     else renderPermission(first, more)
   }
+  if (showPlayer) {
+    player.toggleAttribute('data-entering', player.hidden)
+    renderPlayer()
+  }
   if (showSessions) {
     sessionList.toggleAttribute('data-entering', sessionList.hidden)
     sessionList.replaceChildren(...[...sessions.values()].map(sessionRow))
   }
   ask.hidden = !first
+  detail.toggleAttribute('data-overflowing', !detail.hidden && detail.scrollHeight > 72)
   sessionList.hidden = !showSessions
+  player.hidden = !showPlayer
   await size(open ? openWidth : collapsedWidth, open ? barHeight + content.offsetHeight : barHeight)
 }
 
-const track = (event: HookEvent) => {
+const trackSession = (event: HookEvent) => {
   if (!event.session_id || !event.transcript_path) return
   if (event.hook_event_name === 'SessionEnd') {
     sessions.delete(event.session_id)
@@ -334,7 +399,7 @@ listen<HookEvent>('status', ({ payload }) => {
   lastStatus = describe(payload)
   if (queue.length === 0) showStatus(lastStatus)
   dropStale(payload)
-  track(payload)
+  trackSession(payload)
   setMood(moods[payload.hook_event_name] ?? 'thinking')
 })
 
@@ -343,6 +408,39 @@ listen<Ask>('ask', ({ payload }) => {
   setMood('needs')
   render()
 })
+
+listen<Track | null>('music', ({ payload }) => {
+  const wasShown = Boolean(track)
+  track = payload
+  trackSyncedAt = Date.now()
+  showCompactMusic()
+  if (hovering && wasShown !== Boolean(track)) render()
+  else if (!player.hidden) renderPlayer()
+})
+
+listen<number[] | null>('artwork', ({ payload }) => {
+  if (artworkUrl) URL.revokeObjectURL(artworkUrl)
+  artworkUrl = payload ? URL.createObjectURL(new Blob([new Uint8Array(payload)])) : null
+  paintArtwork()
+})
+
+document.querySelectorAll<HTMLButtonElement>('#controls button').forEach((button) => {
+  button.addEventListener('click', async () => {
+    if (!track) return
+    const action = button.dataset.action
+    await invoke('music_control', { player: track.app, action })
+    if (action === 'toggle') {
+      track = { ...track, playing: !track.playing, position: track.position + (track.playing ? (Date.now() - trackSyncedAt) / 1000 : 0) }
+      trackSyncedAt = Date.now()
+      showCompactMusic()
+      renderPlayer()
+    }
+  })
+})
+
+setInterval(() => {
+  if (!player.hidden) updateProgress()
+}, 500)
 
 listen<number>('expired', ({ payload }) => {
   remove(payload)

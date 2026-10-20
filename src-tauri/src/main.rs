@@ -90,6 +90,102 @@ fn claude_app_is_frontmost() -> bool {
     })
 }
 
+const NOW_PLAYING: &str = r#"
+on run
+    set found to ""
+    if application "Spotify" is running then
+        tell application "Spotify"
+            if player state is not stopped then
+                set found to "Spotify" & tab & (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & ((duration of current track) / 1000 as text)
+            end if
+        end tell
+    end if
+    if found does not contain (tab & "playing" & tab) and application "Music" is running then
+        tell application "Music"
+            if player state is not stopped then
+                set found to "Music" & tab & (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & (duration of current track as text)
+            end if
+        end tell
+    end if
+    return found
+end run
+"#;
+
+const MUSIC_ARTWORK: &str = r#"
+on run argv
+    tell application "Music" to set artworkData to raw data of artwork 1 of current track
+    set artworkFile to open for access (POSIX file (item 1 of argv)) with write permission
+    set eof artworkFile to 0
+    write artworkData to artworkFile
+    close access artworkFile
+end run
+"#;
+
+fn osascript(script: &str, args: &[&str]) -> Option<String> {
+    let output = Command::new("osascript").arg("-e").arg(script).args(args).output().ok()?;
+    output.status.success().then(|| String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+fn seconds(text: &str) -> f64 {
+    text.replace(',', ".").parse().unwrap_or(0.0)
+}
+
+fn now_playing() -> Value {
+    let Some(line) = osascript(NOW_PLAYING, &[]).filter(|line| !line.is_empty()) else {
+        return Value::Null;
+    };
+    let fields: Vec<&str> = line.split('\t').collect();
+    if fields.len() < 7 {
+        return Value::Null;
+    }
+    json!({
+        "app": fields[0],
+        "playing": fields[1] == "playing",
+        "title": fields[2],
+        "artist": fields[3],
+        "album": fields[4],
+        "position": seconds(fields[5]),
+        "duration": seconds(fields[6]),
+    })
+}
+
+fn music_artwork() -> Option<Vec<u8>> {
+    let path = std::env::temp_dir().join("peep-artwork");
+    osascript(MUSIC_ARTWORK, &[path.to_str()?])?;
+    std::fs::read(path).ok()
+}
+
+fn watch_music(app: AppHandle) {
+    let mut last_album = String::new();
+    loop {
+        let track = now_playing();
+        let album = format!("{}{}", track["app"], track["album"]);
+        if album != last_album {
+            last_album = album;
+            let artwork = if track["app"] == "Music" { music_artwork() } else { None };
+            let _ = app.emit("artwork", artwork);
+        }
+        let _ = app.emit("music", track);
+        thread::sleep(Duration::from_secs(2));
+    }
+}
+
+#[tauri::command]
+fn music_control(player: String, action: String) -> Result<(), String> {
+    let player = match player.as_str() {
+        "Spotify" => "Spotify",
+        "Music" => "Music",
+        _ => return Err("unknown player".into()),
+    };
+    let verb = match action.as_str() {
+        "toggle" => "playpause",
+        "next" => "next track",
+        "previous" => "previous track",
+        _ => return Err("unknown action".into()),
+    };
+    osascript(&format!("tell application \"{player}\" to {verb}"), &[]).map(|_| ()).ok_or("music app did not respond".into())
+}
+
 fn play(sound: &str) {
     let _ = Command::new("afplay").arg(format!("/System/Library/Sounds/{sound}.aiff")).spawn();
 }
@@ -124,7 +220,7 @@ fn serve(app: AppHandle) {
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![resize, decide, menu_bar_height])
+        .invoke_handler(tauri::generate_handler![resize, decide, menu_bar_height, music_control])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
@@ -140,7 +236,9 @@ fn main() {
             window.show()?;
 
             let handle = app.handle().clone();
+            let music_handle = handle.clone();
             thread::spawn(move || serve(handle));
+            thread::spawn(move || watch_music(music_handle));
             Ok(())
         })
         .run(tauri::generate_context!())

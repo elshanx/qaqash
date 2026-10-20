@@ -6,9 +6,41 @@
   </head>
   <body>
     <div id="pill" data-mood="idle">
-      <div id="bar"><span id="face"><i></i><i></i></span><span id="status">peep</span></div>
+      <div id="bar">
+        <span id="face"><i></i><i></i></span>
+        <span id="mini-art" class="art"></span>
+        <span id="status">peep</span>
+        <span id="bars" class="eq"><i></i><i></i><i></i><i></i></span>
+      </div>
       <div id="drawer">
         <div id="content">
+          <div id="player" hidden>
+            <div id="track">
+              <div id="art" class="art"></div>
+              <div id="track-text">
+                <div id="title"></div>
+                <div id="artist"></div>
+              </div>
+              <span id="track-eq" class="eq"><i></i><i></i><i></i><i></i></span>
+            </div>
+            <div id="progress-row">
+              <span id="elapsed"></span>
+              <div id="progress"><div id="progress-fill"></div></div>
+              <span id="remaining"></span>
+            </div>
+            <div id="controls">
+              <button data-action="previous" aria-label="Previous">
+                <svg viewBox="0 0 24 24"><path d="M11 6L3.5 12L11 18ZM20.5 6L13 12L20.5 18Z" /></svg>
+              </button>
+              <button data-action="toggle" aria-label="Play or pause" id="toggle">
+                <svg viewBox="0 0 24 24" id="pause-icon"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>
+                <svg viewBox="0 0 24 24" id="play-icon"><path d="M7 4.5L19.5 12L7 19.5Z" /></svg>
+              </button>
+              <button data-action="next" aria-label="Next">
+                <svg viewBox="0 0 24 24"><path d="M13 6L20.5 12L13 18ZM3.5 6L11 12L3.5 18Z" /></svg>
+              </button>
+            </div>
+          </div>
           <ul id="sessions" hidden></ul>
           <div id="ask" hidden>
             <div id="head">
