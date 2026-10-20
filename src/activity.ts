@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
-import { activity, diffView, file, steps } from './dom'
-import { diffOf, fileOf, renderDiff } from './diff'
+import { activity, code, diffView, file, filePath, lang, steps, whoName } from './dom'
+import { changesFiles, fileOf, hunkOf, renderDiff } from './diff'
+import { projectOf } from './hook-events'
 import { render } from './island'
 import { state } from './state'
 import type { HookEvent } from './types'
@@ -31,45 +32,67 @@ const openFile = () => {
 }
 
 export const startActivity = () => {
-  file.addEventListener('click', openFile)
-  diffView.addEventListener('click', openFile)
+  code.addEventListener('click', openFile)
 }
 
-export const trackActivity = (event: HookEvent) => {
+export const readHunk = async (event: HookEvent) => {
+  const path = event.tool_input?.file_path
+  const text = typeof path === 'string' ? await invoke<string | null>('read_file', { path }).catch(() => null) : null
+  return hunkOf(event, text)
+}
+
+const show = () => {
+  clearTimeout(hideTimer)
+  hideTimer = window.setTimeout(close, lingerMs)
+  render()
+}
+
+export const trackActivity = async (event: HookEvent) => {
   const { hook_event_name: name, tool_name: toolName } = event
   const current = state.activity?.event.session_id === event.session_id ? state.activity : null
   if (name === 'PreToolUse' && toolName && toolName !== 'AskUserQuestion') {
-    const diff = diffOf(event)
     const done = current?.steps ?? []
     state.activity = {
-      event: diff ? event : current?.event ?? event,
-      diff: diff ?? current?.diff ?? null,
+      event: current?.event ?? event,
+      hunk: current?.hunk ?? null,
       steps: done.at(-1) === toolName ? done : [...done, toolName].slice(-maxSteps),
       done: false,
+    }
+    if (changesFiles(event)) {
+      const hunk = await readHunk(event)
+      if (state.activity?.event.session_id !== event.session_id) return
+      state.activity = { ...state.activity, event, hunk }
     }
   } else if (name === 'Stop' && current) {
     state.activity = { ...current, done: true }
   } else {
     return
   }
-  if (!state.activity.diff) return
-  clearTimeout(hideTimer)
-  hideTimer = window.setTimeout(close, lingerMs)
-  render()
+  if (state.activity.hunk) show()
 }
 
 const stepRow = (name: string, stepState: 'done' | 'running') =>
   Object.assign(document.createElement('li'), { textContent: name, className: stepState })
 
+const relativePath = ({ cwd = '', tool_input: input }: HookEvent): string => {
+  const path = String(input?.file_path ?? '')
+  return cwd && path.startsWith(`${cwd}/`) ? path.slice(cwd.length + 1) : path
+}
+
 export const renderActivity = () => {
   const current = state.activity
-  if (!current?.diff) return
+  if (!current?.hunk) return
   const last = current.steps.length - 1
   steps.replaceChildren(
     ...current.steps.map((name, index) => stepRow(name, index < last || current.done ? 'done' : 'running')),
     ...(current.done ? [stepRow('Done', 'done')] : []),
   )
-  file.textContent = fileOf(current.event)
-  renderDiff(diffView, current.diff)
+  whoName.textContent = projectOf(current.event)
+  const name = fileOf(current.event)
+  file.textContent = name
+  lang.textContent = name.includes('.') ? name.split('.').pop()!.slice(0, 2).toUpperCase() : ''
+  lang.hidden = !lang.textContent
+  filePath.textContent = `\u200E${relativePath(current.event)}\u200E`
+  renderDiff(diffView, current.hunk)
   activity.toggleAttribute('data-entering', activity.hidden)
 }

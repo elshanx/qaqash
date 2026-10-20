@@ -13,7 +13,7 @@ import { vscodeRow } from './vscode'
 
 const collapsedWidth = 330
 const openWidth = 460
-document.documentElement.style.setProperty('--open-w', `${openWidth}px`)
+const activityWidth = 510
 
 let renderId = 0
 let bumpTimer = 0
@@ -48,7 +48,7 @@ export const showStatus = (text: string) => {
 export const render = async () => {
   const id = ++renderId
   const [first] = state.queue
-  const showActivity = !first && Boolean(state.activity?.diff)
+  const showActivity = !first && Boolean(state.activity?.hunk)
   const showSessions = !first && !showActivity && state.hovering && (sessions.size > 0 || Boolean(state.vscode))
   const showPlayer = !first && !showActivity && state.hovering && Boolean(state.track)
   const open = Boolean(first) || showSessions || showPlayer || showActivity
@@ -59,6 +59,8 @@ export const render = async () => {
     if (id !== renderId) return
   }
   content.removeAttribute('data-leaving')
+  const width = showActivity ? activityWidth : openWidth
+  document.documentElement.style.setProperty('--open-w', `${width}px`)
   clearTimeout(bumpTimer)
   showStatus(first ? (first.kind === 'pair' ? 'Pairing' : projectOf(first.event)) : state.lastStatus)
   if (first) renderPrompt(first)
@@ -81,5 +83,5 @@ export const render = async () => {
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
   markHot()
-  size(open ? openWidth : collapsedWidth, open ? state.barHeight + content.offsetHeight : state.barHeight)
+  size(open ? width : collapsedWidth, open ? state.barHeight + content.offsetHeight : state.barHeight)
 }

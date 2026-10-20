@@ -1,8 +1,10 @@
 import type { HookEvent } from './types'
 
 export type DiffLine = { kind: 'add' | 'del' | 'same', text: string }
+export type Hunk = { start: number, lines: DiffLine[] }
 
 const maxLines = 400
+const context = 2
 
 const linesOf = (text: string): string[] => (text === '' ? [] : text.split('\n').slice(0, maxLines))
 
@@ -32,22 +34,96 @@ export const diffLines = (before: string, after: string): DiffLine[] => {
   return lines
 }
 
+const trim = (lines: DiffLine[], start: number): Hunk => {
+  const changed = lines.map(({ kind }) => kind !== 'same')
+  const first = changed.indexOf(true)
+  if (first < 0) return { start, lines: lines.slice(0, context * 2 + 1) }
+  const from = Math.max(0, first - context)
+  return { start: start && start + from, lines: lines.slice(from, changed.lastIndexOf(true) + context + 1) }
+}
+
+const lineStartBefore = (text: string, index: number): number => {
+  let at = index
+  for (let n = 0; n <= context && at > 0; n++) at = text.lastIndexOf('\n', at - 1)
+  return Math.max(at, -1) + 1
+}
+
+const lineEndAfter = (text: string, index: number): number => {
+  let at = index
+  for (let n = 0; n <= context; n++) {
+    const next = text.indexOf('\n', n === 0 ? at : at + 1)
+    if (next < 0) return text.length
+    at = next
+  }
+  return at
+}
+
+const editHunk = (text: string | null, before: string, after: string): Hunk => {
+  const pending = text?.indexOf(before) ?? -1
+  const applied = pending < 0 ? text?.indexOf(after) ?? -1 : -1
+  if (!text || (pending < 0 && applied < 0)) return trim(diffLines(before, after), 0)
+  const index = pending >= 0 ? pending : applied
+  const found = pending >= 0 ? before : after
+  const from = lineStartBefore(text, index)
+  const window = text.slice(from, lineEndAfter(text, index + found.length))
+  const offset = index - from
+  const swapped = window.slice(0, offset) + (pending >= 0 ? after : before) + window.slice(offset + found.length)
+  const start = text.slice(0, from).split('\n').length
+  return pending >= 0 ? trim(diffLines(window, swapped), start) : trim(diffLines(swapped, window), start)
+}
+
 type Edit = { old_string?: string, new_string?: string }
 
-export const diffOf = ({ tool_name: toolName, tool_input: input = {} }: HookEvent): DiffLine[] | null => {
+export const hunkOf = ({ tool_name: toolName, tool_input: input = {} }: HookEvent, text: string | null): Hunk | null => {
   switch (toolName) {
-    case 'Edit': return diffLines(String(input.old_string ?? ''), String(input.new_string ?? ''))
-    case 'MultiEdit': return ((input.edits as Edit[] | undefined) ?? []).flatMap((edit) => diffLines(edit.old_string ?? '', edit.new_string ?? ''))
-    case 'Write': return diffLines('', String(input.content ?? ''))
+    case 'Edit': return editHunk(text, String(input.old_string ?? ''), String(input.new_string ?? ''))
+    case 'MultiEdit': {
+      const [edit] = (input.edits as Edit[] | undefined) ?? []
+      return edit ? editHunk(text, edit.old_string ?? '', edit.new_string ?? '') : null
+    }
+    case 'Write': return trim(diffLines(text ?? '', String(input.content ?? '')), 1)
     default: return null
   }
 }
 
+export const changesFiles = (event: HookEvent): boolean => ['Edit', 'MultiEdit', 'Write'].includes(event.tool_name ?? '')
+
 export const fileOf = (event: HookEvent): string => String(event.tool_input?.file_path ?? '').split('/').pop() ?? ''
+
+const token = /(\/\/.*)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`[^`]*`)|\b(import|from|export|default|function|const|let|var|return|if|else|for|while|of|in|new|class|extends|type|interface|async|await|true|false|null|undefined|pub|fn|use|mut|impl|struct|enum|match|self)\b|\b(\d[\d_.]*)\b|\b([A-Z]\w*)\b/g
+const tokenKinds = ['comment', 'string', 'keyword', 'number', 'type']
+
+const highlight = (text: string): Node[] => {
+  const nodes: Node[] = []
+  let last = 0
+  for (const match of text.matchAll(token)) {
+    const index = match.index ?? 0
+    nodes.push(document.createTextNode(text.slice(last, index)))
+    const kind = tokenKinds[match.slice(1).findIndex(Boolean)]
+    nodes.push(Object.assign(document.createElement('span'), { className: kind, textContent: match[0] }))
+    last = index + match[0].length
+  }
+  nodes.push(document.createTextNode(text.slice(last)))
+  return nodes
+}
 
 const marks = { add: '+', del: '-', same: ' ' }
 
-export const renderDiff = (target: HTMLElement, lines: DiffLine[]) => {
-  target.replaceChildren(...lines.map(({ kind, text }) =>
-    Object.assign(document.createElement('span'), { className: `line ${kind}`, textContent: `${marks[kind]} ${text}` })))
+export const renderDiff = (target: HTMLElement, { start, lines }: Hunk) => {
+  let oldLine = start
+  let newLine = start
+  target.toggleAttribute('data-numbered', start > 0)
+  target.replaceChildren(...lines.map(({ kind, text }) => {
+    const number = kind === 'add' ? newLine++ : oldLine++
+    if (kind === 'same') newLine++
+    const row = Object.assign(document.createElement('span'), { className: `line ${kind}` })
+    const code = document.createElement('code')
+    code.append(...(kind === 'del' ? [document.createTextNode(text)] : highlight(text)))
+    row.append(
+      Object.assign(document.createElement('span'), { className: 'no', textContent: start > 0 ? String(number) : '' }),
+      Object.assign(document.createElement('span'), { className: 'mark', textContent: marks[kind] }),
+      code,
+    )
+    return row
+  }))
 }

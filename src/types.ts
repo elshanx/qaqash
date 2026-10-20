@@ -32,9 +32,9 @@ export type Ask = {
   event: HookEvent & { device?: string, code?: string }
 }
 
-import type { DiffLine } from './diff'
+import type { Hunk } from './diff'
 
-export type Activity = { event: HookEvent, diff: DiffLine[] | null, steps: string[], done: boolean }
+export type Activity = { event: HookEvent, hunk: Hunk | null, steps: string[], done: boolean }
 
 export type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 

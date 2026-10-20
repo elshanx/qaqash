@@ -48,3 +48,12 @@ pub fn open_in_vscode(path: String, needles: Vec<String>) -> Result<(), String> 
     Command::new("open").arg(url).status().map_err(|error| error.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub fn read_file(path: String) -> Option<String> {
+    let path = std::path::Path::new(&path);
+    if !path.is_absolute() || std::fs::metadata(path).ok()?.len() > 1_000_000 {
+        return None;
+    }
+    std::fs::read_to_string(path).ok()
+}
