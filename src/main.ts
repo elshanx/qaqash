@@ -42,11 +42,39 @@ let hovering = false
 let lastStatus = 'peep'
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
+const spring = (response: number, dampingRatio: number) => {
+  const stiffness = (2 * Math.PI / response) ** 2
+  const damping = 4 * Math.PI * dampingRatio / response
+  const step = 1 / 60
+  const points = [0]
+  let position = 0
+  let velocity = 0
+  while (points.length < 180) {
+    velocity += (stiffness * (1 - position) - damping * velocity) * step
+    position += velocity * step
+    points.push(position)
+    if (Math.abs(1 - position) < 0.001 && Math.abs(velocity) < 0.01) break
+  }
+  points.push(1)
+  return { easing: `linear(${points.map((point) => point.toFixed(3)).join(', ')})`, ms: Math.round(points.length * step * 1000) }
+}
+
+const morph = spring(0.45, 0.68)
+const pop = spring(0.32, 0.6)
+document.documentElement.style.setProperty('--spring', morph.easing)
+document.documentElement.style.setProperty('--spring-ms', `${morph.ms}ms`)
+document.documentElement.style.setProperty('--pop', pop.easing)
+document.documentElement.style.setProperty('--pop-ms', `${pop.ms}ms`)
+
 const ear = 12
+const shadowRoom = 28
+const collapsedWidth = 330
+const openWidth = 460
 let barHeight = 33
-const springMs = 450
 let windowSize = { width: 0, height: 0 }
 let shrinkTimer = 0
+let renderId = 0
+let bumpTimer = 0
 
 const describe = (event: HookEvent): string => {
   switch (event.hook_event_name) {
@@ -102,7 +130,7 @@ const renderQuestion = (question: Question): HTMLElement => {
 
 const resizeWindow = async (width: number, height: number) => {
   windowSize = { width, height }
-  await invoke('resize', { width: width + ear * 2, height })
+  await invoke('resize', { width: width + ear * 2, height: height > barHeight ? height + shadowRoom : height })
 }
 
 const size = async (width: number, height: number) => {
@@ -113,15 +141,27 @@ const size = async (width: number, height: number) => {
   pill.style.setProperty('--w', `${width}px`)
   pill.style.setProperty('--h', `${height}px`)
   pill.toggleAttribute('data-open', height > barHeight)
-  shrinkTimer = window.setTimeout(() => resizeWindow(width, height), springMs)
+  shrinkTimer = window.setTimeout(() => resizeWindow(width, height), morph.ms)
 }
 
 const projectOf = (event: HookEvent): string =>
   event.cwd?.split('/').pop() || event.session_id?.slice(0, 8) || 'Claude'
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const bump = () => {
+  if (pill.hasAttribute('data-open')) return
+  clearTimeout(bumpTimer)
+  size(collapsedWidth + 18, barHeight)
+  bumpTimer = window.setTimeout(() => {
+    if (!pill.hasAttribute('data-open')) size(collapsedWidth, barHeight)
+  }, 140)
+}
+
 const showStatus = (text: string) => {
   if (status.textContent === text) return
   status.textContent = text
+  bump()
   status.animate(
     [{ opacity: 0, transform: 'translateY(4px)', filter: 'blur(3px)' }, { opacity: 0.8, transform: 'none', filter: 'none' }],
     { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
@@ -138,8 +178,17 @@ const sessionRow = ({ name, state, mood }: { name: string, state: string, mood: 
 }
 
 const render = async () => {
+  const id = ++renderId
   const [first] = queue
   const showSessions = !first && hovering && sessions.size > 0
+  const open = Boolean(first) || showSessions
+  if (!open && pill.hasAttribute('data-open')) {
+    content.setAttribute('data-leaving', '')
+    await sleep(140)
+    if (id !== renderId) return
+  }
+  content.removeAttribute('data-leaving')
+  clearTimeout(bumpTimer)
   showStatus(first ? projectOf(first.event) : lastStatus)
   if (first) {
     const more = queue.length > 1 ? ` (+${queue.length - 1})` : ''
@@ -159,8 +208,7 @@ const render = async () => {
   }
   ask.hidden = !first
   sessionList.hidden = !showSessions
-  const open = Boolean(first) || showSessions
-  await size(open ? 460 : 330, open ? barHeight + content.offsetHeight : barHeight)
+  await size(open ? openWidth : collapsedWidth, open ? barHeight + content.offsetHeight : barHeight)
 }
 
 const track = (event: HookEvent) => {
