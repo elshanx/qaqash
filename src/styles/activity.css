@@ -258,19 +258,19 @@
   content: '•••';
   position: absolute;
   z-index: 1;
-  top: -7px;
-  left: -13px;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  box-sizing: border-box;
-  border: 2px solid #000;
-  border-radius: 50%;
-  background: var(--blue);
-  font-size: 7px;
-  letter-spacing: 0.5px;
-  animation: rise var(--pop-ms) var(--pop) both;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: #fff;
+  pointer-events: none;
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.8; }
 }
 
 #file[data-unsaved]::after {
