@@ -9,6 +9,7 @@ type HookEvent = {
   tool_name?: string
   tool_input?: Record<string, unknown>
   message?: string
+  peep_pid?: number
 }
 
 type Question = {
@@ -66,7 +67,9 @@ let lastStatus = 'peep'
 let track: Track | null = null
 let trackSyncedAt = 0
 let musicAppArtwork: string | null = null
-const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
+type Session = { name: string, state: string, mood: Mood, seen: number, pid?: number }
+
+const sessions = new Map<string, Session>()
 const staleAfter = 30 * 60 * 1000
 const spring = (response: number, dampingRatio: number) => {
   const stiffness = (2 * Math.PI / response) ** 2
@@ -373,9 +376,13 @@ const showStatus = (text: string) => {
   )
 }
 
-const sessionRow = ({ name, state, mood }: { name: string, state: string, mood: Mood }, index: number) => {
+const sessionRow = ({ name, state, mood, pid }: Session, index: number) => {
   const row = document.createElement('li')
   row.dataset.mood = mood
+  if (pid) {
+    row.toggleAttribute('data-open-source', true)
+    row.addEventListener('click', () => invoke('open_session', { pid }))
+  }
   row.style.setProperty('--i', String(index))
   row.append(Object.assign(document.createElement('span'), { textContent: name }))
   row.append(Object.assign(document.createElement('span'), { textContent: state }))
@@ -422,7 +429,7 @@ const trackSession = (event: HookEvent) => {
     sessions.delete(event.session_id)
   } else {
     const name = sessions.get(event.session_id)?.name ?? projectOf(event)
-    sessions.set(event.session_id, { name, state: describe(event), mood: moods[event.hook_event_name] ?? 'thinking', seen: Date.now() })
+    sessions.set(event.session_id, { name, state: describe(event), mood: moods[event.hook_event_name] ?? 'thinking', seen: Date.now(), pid: event.peep_pid ?? sessions.get(event.session_id)?.pid })
   }
   if (hovering) render()
 }

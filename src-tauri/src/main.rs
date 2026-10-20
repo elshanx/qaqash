@@ -143,6 +143,41 @@ fn app_is_running(bundle_id: &std::ffi::CStr) -> bool {
     })
 }
 
+fn app_bundle_id(pid: i32) -> Option<String> {
+    objc2::rc::autoreleasepool(|_| unsafe {
+        let app_class = objc2::runtime::AnyClass::get(c"NSRunningApplication")?;
+        let app: *mut objc2::runtime::AnyObject = objc2::msg_send![app_class, runningApplicationWithProcessIdentifier: pid];
+        if app.is_null() {
+            return None;
+        }
+        let policy: isize = objc2::msg_send![&*app, activationPolicy];
+        let bundle_id: *mut objc2::runtime::AnyObject = objc2::msg_send![&*app, bundleIdentifier];
+        if policy != 0 || bundle_id.is_null() {
+            return None;
+        }
+        let utf8: *const std::ffi::c_char = objc2::msg_send![&*bundle_id, UTF8String];
+        Some(std::ffi::CStr::from_ptr(utf8).to_string_lossy().into_owned())
+    })
+}
+
+fn parent_of(pid: i32) -> Option<i32> {
+    let output = Command::new("ps").args(["-o", "ppid=", "-p", &pid.to_string()]).output().ok()?;
+    String::from_utf8_lossy(&output.stdout).trim().parse().ok()
+}
+
+#[tauri::command]
+fn open_session(pid: i32) -> Result<(), String> {
+    let mut current = pid;
+    while current > 1 {
+        if let Some(bundle_id) = app_bundle_id(current) {
+            Command::new("open").args(["-b", &bundle_id]).status().map_err(|error| error.to_string())?;
+            return Ok(());
+        }
+        current = parent_of(current).ok_or("process ended")?;
+    }
+    Err("no app found".into())
+}
+
 struct AppleScript(*mut objc2::runtime::AnyObject);
 
 impl AppleScript {
@@ -257,7 +292,11 @@ fn serve(app: AppHandle) {
         thread::spawn(move || {
             let mut body = String::new();
             let _ = request.as_reader().read_to_string(&mut body);
-            let event: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
+            let mut event: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
+            let pid = request.headers().iter().find(|header| header.field.equiv("X-Peep-Pid")).and_then(|header| header.value.as_str().parse::<i32>().ok());
+            if let (Some(pid), Some(fields)) = (pid, event.as_object_mut()) {
+                fields.insert("peep_pid".into(), pid.into());
+            }
             let in_claude_app = claude_app_is_frontmost();
             let is_permission = event["hook_event_name"] == "PermissionRequest";
             let is_question = event["hook_event_name"] == "PreToolUse" && event["tool_name"] == "AskUserQuestion";
@@ -298,7 +337,7 @@ fn watch_hover(app: AppHandle, window: WebviewWindow) {
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![resize, decide, forget, menu_bar_height, music_control, music_artwork])
+        .invoke_handler(tauri::generate_handler![resize, decide, forget, menu_bar_height, music_control, music_artwork, open_session])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
