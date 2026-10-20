@@ -90,25 +90,18 @@ fn claude_app_is_frontmost() -> bool {
     })
 }
 
-const NOW_PLAYING: &str = r#"
-on run
-    set found to ""
-    if application "Spotify" is running then
-        tell application "Spotify"
-            if player state is not stopped then
-                set found to "Spotify" & tab & (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & ((duration of current track) / 1000 as text)
-            end if
-        end tell
-    end if
-    if found does not contain (tab & "playing" & tab) and application "Music" is running then
-        tell application "Music"
-            if player state is not stopped then
-                set found to "Music" & tab & (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & (duration of current track as text)
-            end if
-        end tell
-    end if
-    return found
-end run
+const SPOTIFY_NOW_PLAYING: &str = r#"
+tell application "Spotify"
+    if player state is stopped then return ""
+    return (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & ((duration of current track) / 1000 as text)
+end tell
+"#;
+
+const MUSIC_NOW_PLAYING: &str = r#"
+tell application "Music"
+    if player state is stopped then return ""
+    return (player state as text) & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as text) & tab & (duration of current track as text)
+end tell
 "#;
 
 const MUSIC_ARTWORK: &str = r#"
@@ -130,23 +123,44 @@ fn seconds(text: &str) -> f64 {
     text.replace(',', ".").parse().unwrap_or(0.0)
 }
 
-fn now_playing() -> Value {
-    let Some(line) = osascript(NOW_PLAYING, &[]).filter(|line| !line.is_empty()) else {
+fn app_is_running(bundle_id: &std::ffi::CStr) -> bool {
+    objc2::rc::autoreleasepool(|_| unsafe {
+        let Some(app_class) = objc2::runtime::AnyClass::get(c"NSRunningApplication") else { return false };
+        let Some(string_class) = objc2::runtime::AnyClass::get(c"NSString") else { return false };
+        let id: *mut objc2::runtime::AnyObject = objc2::msg_send![string_class, stringWithUTF8String: bundle_id.as_ptr()];
+        let apps: *mut objc2::runtime::AnyObject = objc2::msg_send![app_class, runningApplicationsWithBundleIdentifier: id];
+        let count: usize = objc2::msg_send![&*apps, count];
+        count > 0
+    })
+}
+
+fn query_player(player: &str, bundle_id: &std::ffi::CStr, script: &str) -> Value {
+    if !app_is_running(bundle_id) {
         return Value::Null;
-    };
+    }
+    let Some(line) = osascript(script, &[]) else { return Value::Null };
     let fields: Vec<&str> = line.split('\t').collect();
-    if fields.len() < 7 {
+    if fields.len() < 6 {
         return Value::Null;
     }
     json!({
-        "app": fields[0],
-        "playing": fields[1] == "playing",
-        "title": fields[2],
-        "artist": fields[3],
-        "album": fields[4],
-        "position": seconds(fields[5]),
-        "duration": seconds(fields[6]),
+        "app": player,
+        "playing": fields[0] == "playing",
+        "title": fields[1],
+        "artist": fields[2],
+        "album": fields[3],
+        "position": seconds(fields[4]),
+        "duration": seconds(fields[5]),
     })
+}
+
+fn now_playing() -> Value {
+    let spotify = query_player("Spotify", c"com.spotify.client", SPOTIFY_NOW_PLAYING);
+    if spotify["playing"] == true {
+        return spotify;
+    }
+    let music = query_player("Music", c"com.apple.Music", MUSIC_NOW_PLAYING);
+    if music.is_null() { spotify } else { music }
 }
 
 fn music_artwork() -> Option<Vec<u8>> {
@@ -172,11 +186,14 @@ fn watch_music(app: AppHandle) {
 
 #[tauri::command]
 fn music_control(player: String, action: String) -> Result<(), String> {
-    let player = match player.as_str() {
-        "Spotify" => "Spotify",
-        "Music" => "Music",
+    let (player, bundle_id) = match player.as_str() {
+        "Spotify" => ("Spotify", c"com.spotify.client"),
+        "Music" => ("Music", c"com.apple.Music"),
         _ => return Err("unknown player".into()),
     };
+    if !app_is_running(bundle_id) {
+        return Err("music app is not running".into());
+    }
     let verb = match action.as_str() {
         "toggle" => "playpause",
         "next" => "next track",
