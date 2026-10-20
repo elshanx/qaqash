@@ -5,6 +5,7 @@ type HookEvent = {
   hook_event_name: string
   session_id?: string
   cwd?: string
+  transcript_path?: string
   tool_name?: string
   tool_input?: Record<string, unknown>
   message?: string
@@ -163,7 +164,7 @@ const render = async () => {
 }
 
 const track = (event: HookEvent) => {
-  if (!event.session_id) return
+  if (!event.session_id || !event.transcript_path) return
   if (event.hook_event_name === 'SessionEnd') {
     sessions.delete(event.session_id)
   } else {
