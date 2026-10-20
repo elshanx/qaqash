@@ -14,6 +14,7 @@ type PermissionRequest = {
   event: HookEvent
 }
 
+const pill = document.getElementById('pill')!
 const status = document.getElementById('status')!
 const ask = document.getElementById('ask')!
 const tool = document.getElementById('tool')!
@@ -29,6 +30,19 @@ const describe = (event: HookEvent): string => {
     case 'Stop': return 'Done'
     default: return event.hook_event_name
   }
+}
+
+type Mood = 'idle' | 'thinking' | 'needs' | 'done'
+
+const moods: Record<string, Mood> = {
+  UserPromptSubmit: 'thinking',
+  PreToolUse: 'thinking',
+  Notification: 'needs',
+  Stop: 'done',
+}
+
+const setMood = (mood: Mood) => {
+  pill.dataset.mood = queue.length > 0 ? 'needs' : mood
 }
 
 const summarize = (input: Record<string, unknown> = {}): string =>
@@ -53,6 +67,7 @@ const decide = async (allow: boolean) => {
   if (!first) return
   await invoke('decide', { id: first.id, allow })
   queue = queue.filter(({ id }) => id !== first.id)
+  setMood('thinking')
   await render()
 }
 
@@ -69,9 +84,11 @@ document.getElementById('deny')!.addEventListener('click', () => decide(false))
 listen<HookEvent>('status', ({ payload }) => {
   status.textContent = describe(payload)
   dropStale(payload)
+  setMood(moods[payload.hook_event_name] ?? 'thinking')
 })
 
 listen<PermissionRequest>('permission', ({ payload }) => {
   queue = [...queue, payload]
+  setMood('needs')
   render()
 })
