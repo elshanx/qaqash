@@ -7,6 +7,7 @@ import './styles/sessions.css'
 import './styles/music.css'
 import './styles/activity.css'
 import './styles/tabs.css'
+import './styles/vscode.css'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { startActivity, trackActivity } from './activity'
@@ -20,6 +21,7 @@ import { dropStale, startPrompts } from './prompts'
 import { startSessions, trackSession } from './sessions'
 import { startSettings } from './settings'
 import { startTabs } from './tabs'
+import { startVSCode } from './vscode'
 import { state } from './state'
 import type { HookEvent } from './types'
 
@@ -36,6 +38,7 @@ listen<HookEvent>('status', ({ payload }) => {
 startHover()
 startActivity()
 startTabs()
+startVSCode()
 startSettings()
 startPrompts()
 startSessions()

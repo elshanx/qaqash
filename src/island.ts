@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { renderActivity } from './activity'
-import { activity, ask, content, miniPlayer, settingsPage, tabs, detail, island, player, sessionList, status } from './dom'
+import { activity, ask, content, miniPlayer, miniVSCode, vscodeCard, settingsPage, tabs, detail, island, player, sessionList, status } from './dom'
 import { projectOf } from './hook-events'
 import { markHot } from './hover'
 import { wobble } from './liquid'
@@ -11,7 +11,7 @@ import { sessionRow } from './sessions'
 import { renderSettings, settings } from './settings'
 import { sessions, state } from './state'
 import { renderTabs } from './tabs'
-import { vscodeRow } from './vscode'
+import { renderVSCode } from './vscode'
 
 const collapsedWidth = 330
 const openWidth = 460
@@ -56,8 +56,9 @@ export const render = async () => {
   const showActivity = home && working
   const showPlayer = home && !working
   const showMini = showActivity
-  const list = page === 'sessions' ? 'all' : home && state.vscode ? 'vscode' : null
-  const showSessions = Boolean(list)
+  const showSessions = page === 'sessions'
+  const showVSCode = showPlayer
+  const showMiniVSCode = showMini
   const showSettings = page === 'settings'
   const showTabs = !first && state.hovering
   const open = page !== null
@@ -80,13 +81,10 @@ export const render = async () => {
   }
   if (showSessions) {
     sessionList.toggleAttribute('data-entering', sessionList.hidden)
-    const offset = state.vscode ? 1 : 0
-    sessionList.replaceChildren(
-      ...(state.vscode ? [vscodeRow(state.vscode)] : []),
-      ...(list === 'all' ? [...sessions.values()].map((session, index) => sessionRow(session, index + offset)) : []),
-    )
+    sessionList.replaceChildren(...[...sessions.values()].map(sessionRow))
   }
   if (showSettings) renderSettings()
+  if (showVSCode || showMiniVSCode) renderVSCode()
   if (showActivity) renderActivity()
   tabs.hidden = !showTabs
   ask.hidden = !first
@@ -95,6 +93,8 @@ export const render = async () => {
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
   miniPlayer.hidden = !showMini
+  vscodeCard.hidden = !showVSCode
+  miniVSCode.hidden = !showMiniVSCode
   settingsPage.hidden = !showSettings
   markHot()
   size(open ? width : collapsedWidth, open ? state.barHeight + content.offsetHeight : state.barHeight)

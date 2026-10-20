@@ -1,0 +1,80 @@
+#vscode-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.code-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #2b9af3, #0d5ea8);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.code-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.code-icon.small {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.code-icon.small svg {
+  width: 14px;
+  height: 14px;
+}
+
+.card-text {
+  min-width: 0;
+}
+
+.card-title,
+.card-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.card-sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#mini-vscode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  height: 30px;
+}
+
+#mini-vscode .mini-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}

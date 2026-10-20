@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
+import { miniVSCode, vscodeCard } from './dom'
 import { state } from './state'
 
 export const vscodeId = 'com.microsoft.VSCode'
@@ -13,13 +14,20 @@ export const refreshVSCode = async () => {
   state.vscode = title ? parseTitle(title) : null
 }
 
-export const vscodeRow = ({ file, project }: { file: string, project: string }) => {
-  const row = document.createElement('li')
-  row.dataset.mood = 'vscode'
-  row.toggleAttribute('data-open-source', true)
-  row.addEventListener('click', () => invoke('open_vscode'))
-  row.style.setProperty('--i', '0')
-  row.append(Object.assign(document.createElement('span'), { textContent: file || project }))
-  row.append(Object.assign(document.createElement('span'), { textContent: file ? `${project} · VS Code` : 'VS Code' }))
-  return row
+const label = () => {
+  const { vscode } = state
+  if (!vscode) return { title: 'VS Code', sub: 'Not open' }
+  return vscode.file ? { title: vscode.file, sub: `${vscode.project} · VS Code` } : { title: vscode.project, sub: 'VS Code' }
+}
+
+export const renderVSCode = () => {
+  const { title, sub } = label()
+  vscodeCard.querySelector('.card-title')!.textContent = title
+  vscodeCard.querySelector('.card-sub')!.textContent = sub
+  miniVSCode.querySelector('.mini-text')!.textContent = `${title} · ${sub}`
+}
+
+export const startVSCode = () => {
+  vscodeCard.addEventListener('click', () => invoke('open_vscode'))
+  miniVSCode.addEventListener('click', () => invoke('open_vscode'))
 }

@@ -248,10 +248,6 @@
   display: none;
 }
 
-#mini-player:not([hidden]) + #player[hidden] + #sessions:not([hidden]),
-#activity:not([hidden]) ~ #sessions:not([hidden]) {
-  margin-top: 12px;
-}
 
 #player[data-idle] #track-eq {
   display: none;

@@ -107,3 +107,21 @@
 .setting[data-on] .switch::after {
   transform: translateX(14px);
 }
+
+.setting-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.setting-action {
+  flex: 1;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: #1c1c1e;
+  font-size: 13px;
+}
+
+.setting-action:hover,
+.setting-action[data-hot] {
+  background: #2c2c2e;
+}

@@ -26,15 +26,15 @@ Tauri 2 (Rust backend) + Vite + vanilla TypeScript frontend. Chosen over Electro
 
 ## Structure
 One file per concern. Put new code in the file that owns it, or a new file for a new concern; keep `main.ts` and `main.rs` to wiring only.
-- `src/`: `main.ts` (wiring), `island.ts` (sizing and `render`), `prompts.ts`, `sessions.ts`, `music.ts`, `hover.ts`, `mood.ts`, `motion.ts` (spring curves), `hook-events.ts` (event wording), `state.ts`, `dom.ts`, `types.ts`.
-- `src/styles/`: `base`, `island`, `face`, `prompt`, `sessions`, `music`.
-- `src-tauri/src/`: `main.rs` (wiring), `window.rs` (canvas, hit area, hover), `hooks.rs` (hook server, Allow/Deny), `music.rs`, `sessions.rs`, `macos.rs` (Objective-C and AppleScript helpers).
+- `src/`: `main.ts` (wiring), `island.ts` (sizing and `render`), `prompts.ts`, `sessions.ts`, `music.ts`, `hover.ts`, `mood.ts`, `motion.ts` (spring curves), `hook-events.ts` (event wording), `activity.ts` (edit panel and steps), `diff.ts` (line diff and highlighting), `context.ts` (context ring), `tabs.ts`, `settings.ts`, `vscode.ts`, `liquid.ts`, `pair.ts`, `state.ts`, `dom.ts`, `types.ts`.
+- `src/styles/`: `base`, `island`, `liquid`, `face`, `prompt`, `sessions`, `music`, `activity`, `tabs`, `vscode`, `pair`.
+- `src-tauri/src/`: `main.rs` (wiring), `window.rs` (canvas, hit area, hover), `hooks.rs` (hook server, Allow/Deny), `music.rs`, `sessions.rs` (session apps, file and transcript reads), `vscode.rs`, `phone.rs` (iPhone server), `tray.rs` (menu bar icon), `macos.rs` (Objective-C and AppleScript helpers).
 
 ## Rules for working here
 - Run and test locally (`npm install`, `npm run tauri dev`). Prefer verifying the notch look on screen over assuming.
 - Do not edit `~/.claude/settings.json` without asking. Provide `claude-hooks.example.json` and let the user merge it.
 - Keep it offline-only. No telemetry, no network calls beyond 127.0.0.1. One exception the user approved: Spotify cover images load from `https://i.scdn.co` (checked in the frontend before use). The paired iPhone reaches the Mac over the local Wi-Fi.
-- Music (Spotify, Apple Music) is read and controlled with local AppleScript via `osascript`. Only query an app after `NSRunningApplication` confirms it is running, so Qaqash never launches a music app. Apple Music art is read locally; Apple Music radio has no track info, so it shows as "Apple Music Radio".
+- Music (Spotify, Apple Music) is read and controlled with local AppleScript via `osascript`. Only query an app after `NSRunningApplication` confirms it is running, so Qaqash never launches a music app on its own; only the user's click on play or the cover may start Spotify. Apple Music art is read locally; Apple Music radio has no track info, so it shows as "Apple Music Radio".
 - Stay quiet while the Claude desktop app (`com.anthropic.claudefordesktop`) is frontmost: no prompts, no sounds.
 
 ## Build order
