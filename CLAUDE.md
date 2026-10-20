@@ -1,6 +1,6 @@
-# Peep
+# Qaqash
 
-A fully local, notch-style companion for Claude Code on macOS (MacBook Air M2, 8GB RAM). Own project, own name and character; not a fork of Coucou.
+A fully local, notch-style personal companion on macOS. It starts with Claude Code and music, and will grow to cover VS Code, Telegram, WhatsApp, Mail and terminal notifications (MacBook Air M2, 8GB RAM). Own project, own name and character; not a fork of Coucou.
 
 ## Goal
 A small black island at the top-centre of the screen that looks like the notch growing. It shows what Claude Code is doing and lets the user Allow/Deny permission requests. No cloud, no model, no account. Everything is localhost.
@@ -34,7 +34,7 @@ One file per concern. Put new code in the file that owns it, or a new file for a
 - Run and test locally (`npm install`, `npm run tauri dev`). Prefer verifying the notch look on screen over assuming.
 - Do not edit `~/.claude/settings.json` without asking. Provide `claude-hooks.example.json` and let the user merge it.
 - Keep it offline-only. No telemetry, no network calls beyond 127.0.0.1. One exception the user approved: Spotify cover images load from `https://i.scdn.co` (checked in the frontend before use).
-- Music (Spotify, Apple Music) is read and controlled with local AppleScript via `osascript`. Only query an app after `NSRunningApplication` confirms it is running, so Peep never launches a music app. Apple Music art is read locally; Apple Music radio has no track info, so it shows as "Apple Music Radio".
+- Music (Spotify, Apple Music) is read and controlled with local AppleScript via `osascript`. Only query an app after `NSRunningApplication` confirms it is running, so Qaqash never launches a music app. Apple Music art is read locally; Apple Music radio has no track info, so it shows as "Apple Music Radio".
 - Stay quiet while the Claude desktop app (`com.anthropic.claudefordesktop`) is frontmost: no prompts, no sounds.
 
 ## Build order

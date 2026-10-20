@@ -1,6 +1,10 @@
-# Peep
+# Qaqash
 
-A small companion for [Claude Code](https://docs.claude.com/en/docs/claude-code) that lives in your Mac's notch. A pair of eyes shows what Claude is doing, and the notch grows like the iPhone's Dynamic Island when Claude needs you.
+![Qaqash in the notch: a permission request, done, and the music player with sessions on hover](media/demo.gif)
+
+Your little companion that lives in your Mac's notch. A pair of eyes keeps you in the loop, and the notch grows like the iPhone's Dynamic Island when something needs you.
+
+Today it works with Claude Code and your music. VS Code, Telegram, WhatsApp, Mail and terminal notifications are coming next.
 
 Everything runs on your Mac. No account, no cloud, no telemetry.
 
@@ -12,7 +16,7 @@ Everything runs on your Mac. No account, no cloud, no telemetry.
 - **Sessions on hover:** hover the island to see every running Claude Code session and what it's doing. Click one to jump to its app.
 - **Music:** shows what Spotify or Apple Music is playing, with the cover, tinted bars and playback controls.
 - **Sounds:** a ping when Claude needs you, a chime when it's done.
-- **Quiet in the Claude app:** while the Claude desktop app is in front, Peep stays out of the way.
+- **Quiet in the Claude app:** while the Claude desktop app is in front, Qaqash stays out of the way.
 - **iPhone link (in progress):** the Mac side can pair with an iPhone over your Wi-Fi with a QR code (menu bar icon → **Pair iPhone…**). The iPhone app is not built yet.
 
 ## Requirements
@@ -30,21 +34,21 @@ npm run tauri dev
 
 ## Connect it to Claude Code
 
-Peep listens to Claude Code through [hooks](https://docs.claude.com/en/docs/claude-code/hooks). Merge the entries from [`claude-hooks.example.json`](claude-hooks.example.json) into the `hooks` section of `~/.claude/settings.json`, and change the path to `scripts/hook.sh` to where you cloned this repo.
+Qaqash listens to Claude Code through [hooks](https://docs.claude.com/en/docs/claude-code/hooks). Merge the entries from [`claude-hooks.example.json`](claude-hooks.example.json) into the `hooks` section of `~/.claude/settings.json`, and change the path to `scripts/hook.sh` to where you cloned this repo.
 
-If Peep isn't running, the hook does nothing and Claude Code behaves normally.
+If Qaqash isn't running, the hook does nothing and Claude Code behaves normally.
 
 ## How it works
 
 ```
-Claude Code ── hook.sh ──> Peep (127.0.0.1:47831) ──> the island
-                              │
-                              └── Wi-Fi (47832, TLS, paired) ──> iPhone
+Claude Code ── hook.sh ──> Qaqash (127.0.0.1:47831) ──> the island
+                                │
+                                └── Wi-Fi (47832, TLS, paired) ──> iPhone
 ```
 
-- `scripts/hook.sh` sends each hook event to Peep. For permission requests and questions, Peep holds the request until you answer, then replies to Claude Code.
+- `scripts/hook.sh` sends each hook event to Qaqash. For permission requests and questions, Qaqash holds the request until you answer, then replies to Claude Code.
 - The window is a fixed transparent area at the top of the screen that lets clicks through everywhere except the island.
-- Music is read with AppleScript, and only from apps that are already running, so Peep never launches them.
+- Music is read with AppleScript, and only from apps that are already running, so Qaqash never launches them.
 
 ## Project layout
 
@@ -58,4 +62,4 @@ Claude Code ── hook.sh ──> Peep (127.0.0.1:47831) ──> the island
 
 ## Privacy
 
-Peep makes no network calls beyond your own Mac and, once you pair a phone, your local Wi-Fi. The one exception: Spotify cover images are loaded from Spotify's image server (`i.scdn.co`).
+Qaqash makes no network calls beyond your own Mac and, once you pair a phone, your local Wi-Fi. The one exception: Spotify cover images are loaded from Spotify's image server (`i.scdn.co`).
