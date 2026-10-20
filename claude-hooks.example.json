@@ -50,6 +50,26 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/elshanx/dev/peep/scripts/hook.sh"
+          }
+        ]
+      }
     ]
   }
 }
