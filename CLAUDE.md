@@ -1,6 +1,6 @@
 # Qaqash
 
-A fully local, notch-style personal companion on macOS. It starts with Claude Code and music, and will grow to cover VS Code, Telegram, WhatsApp, Mail and terminal notifications (MacBook Air M2, 8GB RAM). Own project, own name and character; not a fork of Coucou.
+A fully local, notch-style personal companion on macOS. It starts with Claude Code and music, and will grow to cover VS Code, Telegram, WhatsApp, Mail and terminal notifications (MacBook Air M2, 8GB RAM). Own project, own name and character (the mascot, the pair of eyes, is also called Qaqash); not a fork of Coucou.
 
 ## Goal
 A small black island at the top-centre of the screen that looks like the notch growing. It shows what Claude Code is doing and lets the user Allow/Deny permission requests. No cloud, no model, no account. Everything is localhost.

@@ -61,7 +61,7 @@ fn answer_permission(app: &AppHandle, event: Value) -> String {
 
 fn answer_question(app: &AppHandle, event: Value) -> String {
     let mut input = event["tool_input"].clone();
-    let Some(answers) = wait_for_user(app, "question", event, Duration::from_secs(30)) else {
+    let Some(answers) = wait_for_user(app, "question", event, Duration::from_secs(580)) else {
         return String::new();
     };
     input["answers"] = answers;

@@ -63,3 +63,7 @@ Claude Code ── hook.sh ──> Qaqash (127.0.0.1:47831) ──> the island
 ## Privacy
 
 Qaqash makes no network calls beyond your own Mac and your local Wi-Fi, with two exceptions: Spotify cover images load from Spotify's image server (`i.scdn.co`), and if you turn on iPhone notifications, they go through [ntfy.sh](https://ntfy.sh). Notifications only say the project and the tool, never the command, and the topic name is random.
+
+## License
+
+[MIT](LICENSE)

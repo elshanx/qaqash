@@ -15,7 +15,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh"
+            "command": "/Users/elshanx/dev/qaqash/scripts/hook.sh",
+            "timeout": 600
           }
         ]
       }
