@@ -511,6 +511,12 @@ listen<Track | null>('music', ({ payload }) => {
   else if (!player.hidden) renderPlayer()
 })
 
+document.querySelectorAll<HTMLElement>('[data-open-source]').forEach((element) => {
+  element.addEventListener('click', () => {
+    if (track) invoke('music_control', { player: track.app, action: 'open' })
+  })
+})
+
 document.querySelectorAll<HTMLButtonElement>('#controls button').forEach((button) => {
   button.addEventListener('click', async () => {
     if (!track) return

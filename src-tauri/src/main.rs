@@ -235,13 +235,15 @@ fn music_control(player: String, action: String) -> Result<(), String> {
     if !app_is_running(bundle_id) {
         return Err("music app is not running".into());
     }
-    let verb = match action.as_str() {
-        "toggle" => "playpause",
-        "next" => "next track",
-        "previous" => "previous track",
+    let commands = match (action.as_str(), player) {
+        ("toggle", _) => "playpause",
+        ("next", _) => "next track",
+        ("previous", _) => "previous track",
+        ("open", "Music") => "try\nreveal current track\nend try\nactivate",
+        ("open", _) => "activate",
         _ => return Err("unknown action".into()),
     };
-    osascript(&format!("tell application \"{player}\" to {verb}"), &[]).map(|_| ()).ok_or("music app did not respond".into())
+    osascript(&format!("tell application \"{player}\"\n{commands}\nend tell"), &[]).map(|_| ()).ok_or("music app did not respond".into())
 }
 
 fn play(sound: &str) {
