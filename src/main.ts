@@ -103,12 +103,28 @@ let shrinkTimer = 0
 let renderId = 0
 let bumpTimer = 0
 
+const activities: Record<string, string> = {
+  Bash: 'Running',
+  Read: 'Reading',
+  Edit: 'Editing',
+  Write: 'Writing',
+  NotebookEdit: 'Editing',
+  Grep: 'Searching',
+  Glob: 'Searching',
+  WebFetch: 'Browsing',
+  WebSearch: 'Searching',
+  Task: 'Delegating',
+  Agent: 'Delegating',
+  AskUserQuestion: 'Asking',
+  TodoWrite: 'Planning',
+}
+
 const describe = (event: HookEvent): string => {
   switch (event.hook_event_name) {
     case 'SessionStart': return 'Ready'
     case 'SessionEnd': return 'Ended'
     case 'UserPromptSubmit': return 'Thinking…'
-    case 'PreToolUse': return event.tool_name ?? 'Working…'
+    case 'PreToolUse': return activities[event.tool_name ?? ''] ?? 'Working…'
     case 'Notification': return event.message ?? 'Needs you'
     case 'PermissionRequest': return 'Needs you'
     case 'Stop': return 'Done'
@@ -401,7 +417,7 @@ const trackSession = (event: HookEvent) => {
   if (event.hook_event_name === 'SessionEnd') {
     sessions.delete(event.session_id)
   } else {
-    const name = projectOf(event)
+    const name = sessions.get(event.session_id)?.name ?? projectOf(event)
     sessions.set(event.session_id, { name, state: describe(event), mood: moods[event.hook_event_name] ?? 'thinking', seen: Date.now() })
   }
   if (hovering) render()
