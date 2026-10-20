@@ -24,6 +24,7 @@ step() {
   sleep "${2:-2.5}"
 }
 
+osascript -e 'tell application "Finder" to activate'
 send '"hook_event_name":"SessionStart"'
 send '"hook_event_name":"UserPromptSubmit","prompt":"update the vat rate"'
 step "thinking"
