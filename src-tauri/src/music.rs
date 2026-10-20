@@ -81,7 +81,7 @@ pub fn music_artwork() -> Option<Vec<u8>> {
     if !app_is_running(c"com.apple.Music") {
         return None;
     }
-    let path = std::env::temp_dir().join("peep-artwork");
+    let path = std::env::temp_dir().join("qaqash-artwork");
     osascript(MUSIC_ARTWORK, &[path.to_str()?])?;
     std::fs::read(path).ok()
 }

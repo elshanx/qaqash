@@ -40,5 +40,5 @@ fn main() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running peep");
+        .expect("error while running qaqash");
 }

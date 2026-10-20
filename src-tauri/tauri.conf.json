@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "peep",
+  "productName": "qaqash",
   "version": "0.1.0",
-  "identifier": "dev.elshanx.peep",
+  "identifier": "dev.elshanx.qaqash",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

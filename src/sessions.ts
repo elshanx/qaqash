@@ -30,7 +30,7 @@ export const trackSession = (event: HookEvent) => {
       state: describe(event),
       mood: moodOf(event),
       seen: Date.now(),
-      pid: event.peep_pid ?? known?.pid,
+      pid: event.qaqash_pid ?? known?.pid,
     })
   }
   if (state.hovering) render()

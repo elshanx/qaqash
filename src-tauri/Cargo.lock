@@ -2374,21 +2374,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "peep"
-version = "0.1.0"
-dependencies = [
- "getrandom 0.4.3",
- "objc2",
- "qrcode",
- "rcgen",
- "serde_json",
- "sha2 0.11.1",
- "tauri",
- "tauri-build",
- "tiny_http",
-]
-
-[[package]]
 name = "pem"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2611,6 +2596,21 @@ name = "pxfm"
 version = "0.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea"
+
+[[package]]
+name = "qaqash"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.4.3",
+ "objc2",
+ "qrcode",
+ "rcgen",
+ "serde_json",
+ "sha2 0.11.1",
+ "tauri",
+ "tauri-build",
+ "tiny_http",
+]
 
 [[package]]
 name = "qrcode"

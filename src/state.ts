@@ -4,7 +4,7 @@ export const state = {
   queue: [] as Ask[],
   step: 0,
   hovering: false,
-  lastStatus: 'peep',
+  lastStatus: 'qaqash',
   track: null as Track | null,
   trackSyncedAt: 0,
   barHeight: 33,

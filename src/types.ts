@@ -6,7 +6,7 @@ export type HookEvent = {
   tool_name?: string
   tool_input?: Record<string, unknown>
   message?: string
-  peep_pid?: number
+  qaqash_pid?: number
 }
 
 export type Question = {

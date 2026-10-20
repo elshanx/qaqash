@@ -5,7 +5,7 @@ use tauri::{App, AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub fn create(app: &App) -> tauri::Result<()> {
     let pair = MenuItem::with_id(app, "pair", "Pair iPhone…", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Peep", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Qaqash", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&pair, &quit])?;
     TrayIconBuilder::new()
         .icon(Image::from_bytes(include_bytes!("../icons/tray.png"))?)

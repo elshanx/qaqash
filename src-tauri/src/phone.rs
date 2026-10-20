@@ -53,7 +53,7 @@ fn wifi_address() -> String {
 fn create_settings(path: PathBuf) -> Option<Settings> {
     let mut secret = [0u8; 32];
     getrandom::fill(&mut secret).ok()?;
-    let names = vec![format!("{}.local", local_host_name()), "peep.local".into()];
+    let names = vec![format!("{}.local", local_host_name()), "qaqash.local".into()];
     let certified = rcgen::generate_simple_self_signed(names).ok()?;
     let settings = Settings {
         path,
@@ -149,9 +149,9 @@ fn nudge(ask: &Value) {
     let Some(to) = settings().map(|settings| settings.nudge_to).filter(|to| !to.is_empty()) else { return };
     let project = ask["event"]["cwd"].as_str().and_then(|cwd| cwd.rsplit('/').next()).unwrap_or("Claude");
     let text = if ask["kind"] == "question" {
-        format!("Peep: {project} has a question for you.")
+        format!("Qaqash: {project} has a question for you.")
     } else {
-        format!("Peep: {project} wants to use {}.", ask["event"]["tool_name"].as_str().unwrap_or("a tool"))
+        format!("Qaqash: {project} wants to use {}.", ask["event"]["tool_name"].as_str().unwrap_or("a tool"))
     };
     let script = r#"on run argv
     tell application "Messages" to send (item 1 of argv) to participant (item 2 of argv) of (1st account whose service type = iMessage)

@@ -53,7 +53,7 @@ fn wait_for_user(app: &AppHandle, kind: &str, event: Value, timeout: Duration) -
 fn answer_permission(app: &AppHandle, event: Value) -> String {
     let behavior = match wait_for_user(app, "permission", event, Duration::from_secs(580)) {
         Some(Value::Bool(true)) => json!({ "behavior": "allow" }),
-        Some(_) => json!({ "behavior": "deny", "message": "Denied from Peep" }),
+        Some(_) => json!({ "behavior": "deny", "message": "Denied from Qaqash" }),
         None => return String::new(),
     };
     json!({ "hookSpecificOutput": { "hookEventName": "PermissionRequest", "decision": behavior } }).to_string()
@@ -80,9 +80,9 @@ pub fn serve(app: AppHandle) {
             let mut body = String::new();
             let _ = request.as_reader().read_to_string(&mut body);
             let mut event: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
-            let pid = request.headers().iter().find(|header| header.field.equiv("X-Peep-Pid")).and_then(|header| header.value.as_str().parse::<i32>().ok());
+            let pid = request.headers().iter().find(|header| header.field.equiv("X-Qaqash-Pid")).and_then(|header| header.value.as_str().parse::<i32>().ok());
             if let (Some(pid), Some(fields)) = (pid, event.as_object_mut()) {
-                fields.insert("peep_pid".into(), pid.into());
+                fields.insert("qaqash_pid".into(), pid.into());
             }
             let in_claude_app = claude_app_is_frontmost();
             let is_permission = event["hook_event_name"] == "PermissionRequest";
