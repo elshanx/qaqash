@@ -43,7 +43,7 @@ let lastStatus = 'peep'
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
 const ear = 12
-const barHeight = 33
+let barHeight = 33
 const springMs = 450
 let windowSize = { width: 0, height: 0 }
 let shrinkTimer = 0
@@ -239,4 +239,8 @@ listen<number>('expired', ({ payload }) => {
   render()
 })
 
-render()
+invoke<number>('menu_bar_height').catch(() => 0).then((height) => {
+  barHeight = height || barHeight
+  document.documentElement.style.setProperty('--bar', `${barHeight}px`)
+  render()
+})

@@ -22,6 +22,12 @@ fn place(window: &WebviewWindow, width: f64, height: f64) -> tauri::Result<()> {
 }
 
 #[tauri::command]
+fn menu_bar_height(window: WebviewWindow) -> Result<f64, String> {
+    let monitor = window.primary_monitor().map_err(|e| e.to_string())?.ok_or("no monitor")?;
+    Ok(monitor.work_area().position.y as f64 / monitor.scale_factor())
+}
+
+#[tauri::command]
 fn resize(window: WebviewWindow, width: f64, height: f64) -> Result<(), String> {
     place(&window, width, height).map_err(|e| e.to_string())
 }
@@ -98,7 +104,7 @@ fn serve(app: AppHandle) {
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![resize, decide])
+        .invoke_handler(tauri::generate_handler![resize, decide, menu_bar_height])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
