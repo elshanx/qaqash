@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { renderActivity } from './activity'
-import { activity, ask, content, detail, island, player, sessionList, status } from './dom'
+import { activity, ask, content, settingsPage, tabs, detail, island, player, sessionList, status } from './dom'
 import { projectOf } from './hook-events'
 import { markHot } from './hover'
 import { wobble } from './liquid'
@@ -8,7 +8,9 @@ import { morph, sleep } from './motion'
 import { renderPlayer } from './music'
 import { renderPrompt } from './prompts'
 import { sessionRow } from './sessions'
+import { renderSettings, settings } from './settings'
 import { sessions, state } from './state'
+import { renderTabs } from './tabs'
 import { vscodeRow } from './vscode'
 
 const collapsedWidth = 330
@@ -48,10 +50,15 @@ export const showStatus = (text: string) => {
 export const render = async () => {
   const id = ++renderId
   const [first] = state.queue
-  const showActivity = !first && Boolean(state.activity?.hunks.length)
-  const showSessions = !first && !showActivity && state.hovering && (sessions.size > 0 || Boolean(state.vscode))
-  const showPlayer = !first && !showActivity && state.hovering && Boolean(state.track)
-  const open = Boolean(first) || showSessions || showPlayer || showActivity
+  const working = settings.editPanel && Boolean(state.activity?.hunks.length)
+  const page = first ? 'prompt' : state.hovering ? state.tab : working ? 'home' : null
+  const home = page === 'home'
+  const showActivity = home && working
+  const showPlayer = home && !working && Boolean(state.track)
+  const showSessions = page === 'sessions' || (home && !working && !state.track)
+  const showSettings = page === 'settings'
+  const showTabs = !first && state.hovering
+  const open = page !== null
   if (!open && island.hasAttribute('data-open')) {
     content.setAttribute('data-leaving', '')
     size(collapsedWidth, state.barHeight)
@@ -64,6 +71,7 @@ export const render = async () => {
   clearTimeout(bumpTimer)
   showStatus(first ? (first.kind === 'pair' ? 'Pairing' : projectOf(first.event)) : state.lastStatus)
   if (first) renderPrompt(first)
+  if (showTabs) renderTabs()
   if (showPlayer) {
     player.toggleAttribute('data-entering', player.hidden)
     renderPlayer()
@@ -76,12 +84,15 @@ export const render = async () => {
       ...[...sessions.values()].map((session, index) => sessionRow(session, index + offset)),
     )
   }
+  if (showSettings) renderSettings()
   if (showActivity) renderActivity()
+  tabs.hidden = !showTabs
   ask.hidden = !first
   activity.hidden = !showActivity
   detail.toggleAttribute('data-overflowing', !detail.hidden && detail.scrollHeight > detail.clientHeight)
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
+  settingsPage.hidden = !showSettings
   markHot()
   size(open ? width : collapsedWidth, open ? state.barHeight + content.offsetHeight : state.barHeight)
 }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::Mutex;
 use std::thread;
@@ -9,6 +9,15 @@ use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager, State};
 use crate::macos::claude_app_is_frontmost;
 use crate::phone;
+
+static SOUND: AtomicBool = AtomicBool::new(true);
+static QUIET: AtomicBool = AtomicBool::new(true);
+
+#[tauri::command]
+pub fn set_settings(sound: bool, quiet: bool) {
+    SOUND.store(sound, Ordering::Relaxed);
+    QUIET.store(quiet, Ordering::Relaxed);
+}
 
 #[derive(Default)]
 pub struct Pending {
@@ -71,6 +80,9 @@ fn answer_question(app: &AppHandle, event: Value) -> String {
 }
 
 fn play(sound: &str) {
+    if !SOUND.load(Ordering::Relaxed) {
+        return;
+    }
     let _ = Command::new("afplay").arg(format!("/System/Library/Sounds/{sound}.aiff")).spawn();
 }
 
@@ -86,7 +98,7 @@ pub fn serve(app: AppHandle) {
             if let (Some(pid), Some(fields)) = (pid, event.as_object_mut()) {
                 fields.insert("qaqash_pid".into(), pid.into());
             }
-            let in_claude_app = claude_app_is_frontmost();
+            let in_claude_app = QUIET.load(Ordering::Relaxed) && claude_app_is_frontmost();
             let is_permission = event["hook_event_name"] == "PermissionRequest";
             let is_question = event["hook_event_name"] == "PreToolUse" && event["tool_name"] == "AskUserQuestion";
             let reply = if is_permission && !in_claude_app {

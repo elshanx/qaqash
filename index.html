@@ -14,6 +14,22 @@
       </div>
       <div id="drawer">
         <div id="content">
+          <nav id="tabs" hidden>
+            <button data-tab="home" aria-label="Home">
+              <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" /></svg>
+            </button>
+            <button data-tab="sessions" aria-label="Sessions">
+              <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9" /></svg>
+            </button>
+            <span class="spacer"></span>
+            <button data-tab="settings" aria-label="Settings">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" /></svg>
+            </button>
+            <button id="sound" aria-label="Sound">
+              <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path class="waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /><path class="mute" d="M16 9.5l5 5M21 9.5l-5 5" /></svg>
+            </button>
+          </nav>
+          <div id="settings" hidden></div>
           <div id="player" hidden>
             <div id="track">
               <div id="art" class="art" data-open-source></div>

@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
+import { changesFiles, fileOf } from './diff'
 import { describe, moodOf, projectOf } from './hook-events'
 import { render } from './island'
 import { sessions, state } from './state'
@@ -7,7 +8,7 @@ import { vscodeId } from './vscode'
 
 const staleAfter = 30 * 60 * 1000
 
-export const sessionRow = ({ name, state: activity, mood, pid, app }: Session, index: number) => {
+export const sessionRow = ({ name, state: activity, mood, pid, app, lastFile }: Session, index: number) => {
   const row = document.createElement('li')
   row.dataset.mood = mood
   if (pid) {
@@ -16,7 +17,7 @@ export const sessionRow = ({ name, state: activity, mood, pid, app }: Session, i
   }
   row.style.setProperty('--i', String(index))
   row.append(Object.assign(document.createElement('span'), { textContent: name }))
-  row.append(Object.assign(document.createElement('span'), { textContent: app === vscodeId ? `${activity} · VS Code` : activity }))
+  row.append(Object.assign(document.createElement('span'), { textContent: [activity, lastFile, app === vscodeId && 'VS Code'].filter(Boolean).join(' · ') }))
   return row
 }
 
@@ -35,6 +36,7 @@ export const trackSession = (event: HookEvent) => {
       seen: Date.now(),
       pid,
       app: known?.app,
+      lastFile: changesFiles(event) ? fileOf(event) : known?.lastFile,
     })
     if (pid && pid !== known?.pid) {
       invoke<string | null>('session_app', { pid }).then((app) => {

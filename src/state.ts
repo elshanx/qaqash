@@ -1,3 +1,4 @@
+import type { Tab } from './tabs'
 import type { Activity, Ask, Session, Track } from './types'
 
 export const state = {
@@ -9,6 +10,7 @@ export const state = {
   trackSyncedAt: 0,
   barHeight: 33,
   activity: null as Activity | null,
+  tab: 'home' as Tab,
   vscode: null as { file: string, project: string } | null,
 }
 

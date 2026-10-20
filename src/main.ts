@@ -6,6 +6,7 @@ import './styles/prompt.css'
 import './styles/sessions.css'
 import './styles/music.css'
 import './styles/activity.css'
+import './styles/tabs.css'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { startActivity, trackActivity } from './activity'
@@ -16,6 +17,8 @@ import { setMood } from './mood'
 import { startMusic } from './music'
 import { dropStale, startPrompts } from './prompts'
 import { startSessions, trackSession } from './sessions'
+import { startSettings } from './settings'
+import { startTabs } from './tabs'
 import { state } from './state'
 import type { HookEvent } from './types'
 
@@ -30,6 +33,8 @@ listen<HookEvent>('status', ({ payload }) => {
 
 startHover()
 startActivity()
+startTabs()
+startSettings()
 startPrompts()
 startSessions()
 startMusic()

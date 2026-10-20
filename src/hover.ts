@@ -20,6 +20,7 @@ export const startHover = () => {
     markHot()
     if (state.hovering === Boolean(payload)) return
     state.hovering = Boolean(payload)
+    if (!state.hovering) state.tab = 'home'
     render()
     if (state.hovering) refreshVSCode().then(render)
   })
