@@ -1,0 +1,83 @@
+:root {
+  --notch-width: 190px;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font: 12px -apple-system, system-ui, sans-serif;
+  color: #fff;
+  user-select: none;
+  cursor: default;
+}
+
+#pill {
+  height: 100%;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+#bar {
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+#status {
+  margin-left: calc(50% + var(--notch-width) / 2 - 16px);
+  opacity: 0.8;
+}
+
+#ask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 14px;
+}
+
+#ask[hidden] {
+  display: none;
+}
+
+#tool {
+  font-weight: 600;
+}
+
+#detail {
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font: 11px ui-monospace, monospace;
+  opacity: 0.7;
+}
+
+#buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font: inherit;
+  color: #fff;
+  background: #333;
+}
+
+#allow {
+  background: #2f7d32;
+}
