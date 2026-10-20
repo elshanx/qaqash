@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::{channel, Sender};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::process::Command;
 use std::thread;
 use std::time::Duration;
 use serde_json::{json, Value};
@@ -50,6 +51,10 @@ fn answer_permission(app: &AppHandle, event: Value) -> String {
     json!({ "hookSpecificOutput": { "hookEventName": "PermissionRequest", "decision": behavior } }).to_string()
 }
 
+fn play(sound: &str) {
+    let _ = Command::new("afplay").arg(format!("/System/Library/Sounds/{sound}.aiff")).spawn();
+}
+
 fn serve(app: AppHandle) {
     let server = tiny_http::Server::http("127.0.0.1:47831").expect("port 47831 in use");
     for mut request in server.incoming_requests() {
@@ -59,8 +64,12 @@ fn serve(app: AppHandle) {
             let _ = request.as_reader().read_to_string(&mut body);
             let event: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
             let reply = if event["hook_event_name"] == "PermissionRequest" {
+                play("Ping");
                 answer_permission(&app, event)
             } else {
+                if event["hook_event_name"] == "Stop" {
+                    play("Glass");
+                }
                 let _ = app.emit("status", event);
                 String::new()
             };
