@@ -1,6 +1,7 @@
 :root {
   --notch-width: 190px;
   --ear: 12px;
+  --bar: 33px;
   --spring: cubic-bezier(0.34, 1.36, 0.64, 1);
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --orange: #ff9f0a;
@@ -23,7 +24,7 @@ body {
 
 #pill {
   --w: 330px;
-  --h: 38px;
+  --h: var(--bar);
   position: relative;
   width: var(--w);
   height: var(--h);
@@ -58,14 +59,14 @@ body {
 
 #bar {
   position: relative;
-  height: 38px;
+  height: var(--bar);
   padding: 0 16px;
   display: flex;
   align-items: center;
 }
 
 #drawer {
-  height: calc(100% - 38px);
+  height: calc(100% - var(--bar));
   overflow: hidden;
 }
 

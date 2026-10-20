@@ -42,6 +42,7 @@ let lastStatus = 'peep'
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
 const ear = 12
+const barHeight = 33
 const springMs = 450
 let windowSize = { width: 0, height: 0 }
 let shrinkTimer = 0
@@ -110,7 +111,7 @@ const size = async (width: number, height: number) => {
   }
   pill.style.setProperty('--w', `${width}px`)
   pill.style.setProperty('--h', `${height}px`)
-  pill.toggleAttribute('data-open', height > 38)
+  pill.toggleAttribute('data-open', height > barHeight)
   shrinkTimer = window.setTimeout(() => resizeWindow(width, height), springMs)
 }
 
@@ -158,7 +159,7 @@ const render = async () => {
   ask.hidden = !first
   sessionList.hidden = !showSessions
   const open = Boolean(first) || showSessions
-  await size(open ? 460 : 330, open ? 38 + content.offsetHeight : 38)
+  await size(open ? 460 : 330, open ? barHeight + content.offsetHeight : barHeight)
 }
 
 const track = (event: HookEvent) => {
