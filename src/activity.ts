@@ -7,7 +7,7 @@ import { state } from './state'
 import type { HookEvent } from './types'
 
 const lingerMs = 6000
-const maxSteps = 4
+const maxSteps = 6
 let hideTimer = 0
 
 const close = () => {
@@ -47,28 +47,28 @@ const show = () => {
   render()
 }
 
-export const trackActivity = async (event: HookEvent) => {
-  const { hook_event_name: name, tool_name: toolName } = event
-  const current = state.activity?.event.session_id === event.session_id ? state.activity : null
+type Run = { steps: string[], done: boolean }
+
+const runs = new Map<string, Run>()
+
+const nextRun = ({ hook_event_name: name, tool_name: toolName }: HookEvent, run: Run): Run | null => {
   if (name === 'PreToolUse' && toolName && toolName !== 'AskUserQuestion') {
-    const done = current?.steps ?? []
-    state.activity = {
-      event: current?.event ?? event,
-      hunks: current?.hunks ?? [],
-      steps: done.at(-1) === toolName ? done : [...done, toolName].slice(-maxSteps),
-      done: false,
-    }
-    if (changesFiles(event)) {
-      const hunks = await readHunks(event)
-      if (state.activity?.event.session_id !== event.session_id) return
-      state.activity = { ...state.activity, event, hunks }
-    }
-  } else if (name === 'Stop' && current) {
-    state.activity = { ...current, done: true }
-  } else {
+    return { steps: run.steps.at(-1) === toolName ? run.steps : [...run.steps, toolName].slice(-maxSteps), done: false }
+  }
+  return name === 'Stop' ? { ...run, done: true } : null
+}
+
+export const trackActivity = async (event: HookEvent) => {
+  const id = event.session_id ?? ''
+  if (event.hook_event_name === 'UserPromptSubmit' || event.hook_event_name === 'SessionEnd') {
+    runs.delete(id)
     return
   }
-  if (state.activity.hunks.length > 0) show()
+  const run = nextRun(event, runs.get(id) ?? { steps: [], done: false })
+  if (!run) return
+  runs.set(id, run)
+  if (changesFiles(event)) state.activity = { event, hunks: await readHunks(event) }
+  if (state.activity?.event.session_id === id && state.activity?.hunks.length) show()
 }
 
 const toolIcons: Record<string, string> = {
@@ -117,10 +117,11 @@ const relativePath = ({ cwd = '', tool_input: input }: HookEvent): string => {
 export const renderActivity = () => {
   const current = state.activity
   if (!current?.hunks.length) return
-  const last = current.steps.length - 1
+  const run = runs.get(current.event.session_id ?? '') ?? { steps: [], done: false }
+  const last = run.steps.length - 1
   steps.replaceChildren(
-    ...current.steps.map((name, index) => stepRow(name, index < last || current.done ? 'done' : 'running')),
-    ...(current.done ? [stepRow('Done', 'done')] : []),
+    ...run.steps.map((name, index) => stepRow(name, index < last || run.done ? 'done' : 'running')),
+    ...(run.done ? [stepRow('Done', 'done')] : []),
   )
   whoName.textContent = projectOf(current.event)
   const name = fileOf(current.event)
@@ -128,7 +129,7 @@ export const renderActivity = () => {
   lang.textContent = name.includes('.') ? name.split('.').pop()!.slice(0, 2).toUpperCase() : ''
   lang.hidden = !lang.textContent
   filePath.textContent = `\u200E${relativePath(current.event)}\u200E`
-  file.toggleAttribute('data-unsaved', !current.done && changesFiles({ hook_event_name: '', tool_name: current.steps[last] }))
+  file.toggleAttribute('data-unsaved', !run.done && changesFiles({ hook_event_name: '', tool_name: run.steps[last] }))
   if (current.hunks !== shownHunks) {
     shownHunks = current.hunks
     renderDiff(diffView, current.hunks)
