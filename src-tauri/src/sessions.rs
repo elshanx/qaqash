@@ -57,3 +57,30 @@ pub fn read_file(path: String) -> Option<String> {
     }
     std::fs::read_to_string(path).ok()
 }
+
+fn is_transcript(path: &std::path::Path) -> bool {
+    let projects = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default()).join(".claude/projects");
+    path.is_absolute() && path.starts_with(projects) && path.extension().is_some_and(|extension| extension == "jsonl")
+}
+
+#[tauri::command]
+pub fn context_used(path: String) -> Option<u64> {
+    use std::io::{Read, Seek, SeekFrom};
+    let path = std::path::Path::new(&path);
+    if !is_transcript(path) {
+        return None;
+    }
+    let mut file = std::fs::File::open(path).ok()?;
+    let length = file.metadata().ok()?.len();
+    file.seek(SeekFrom::Start(length.saturating_sub(512 * 1024))).ok()?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).ok()?;
+    String::from_utf8_lossy(&bytes).lines().rev().find_map(|line| {
+        let entry: serde_json::Value = serde_json::from_str(line).ok()?;
+        if entry["type"] != "assistant" || entry["isSidechain"] == true {
+            return None;
+        }
+        let usage = entry["message"].get("usage")?;
+        Some(["input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"].iter().filter_map(|key| usage[key].as_u64()).sum())
+    })
+}

@@ -68,3 +68,41 @@
   30% { translate: 0 -2px; }
   60% { translate: 0 0.5px; }
 }
+
+#island {
+  --ring: rgba(255, 255, 255, 0.7);
+}
+
+#island[data-context='high'] {
+  --ring: var(--orange);
+}
+
+#island[data-context='full'] {
+  --ring: #ff453a;
+}
+
+#face::before,
+#avatar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(var(--ring) calc(var(--context, 0) * 1turn), rgba(255, 255, 255, 0.12) 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  transition: background 0.3s;
+}
+
+#avatar::after {
+  width: 58px;
+  height: 58px;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+}
+
+#island:not([data-context]) #face::before,
+#island:not([data-context]) #avatar::after {
+  display: none;
+}

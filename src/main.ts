@@ -10,6 +10,7 @@ import './styles/tabs.css'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { startActivity, trackActivity } from './activity'
+import { trackContext } from './context'
 import { describe, moodOf } from './hook-events'
 import { startHover } from './hover'
 import { render, showStatus } from './island'
@@ -28,6 +29,7 @@ listen<HookEvent>('status', ({ payload }) => {
   dropStale(payload)
   trackSession(payload)
   trackActivity(payload)
+  trackContext(payload)
   setMood(moodOf(payload))
 })
 
