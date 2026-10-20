@@ -139,9 +139,13 @@ const moods: Record<string, Mood> = {
   Stop: 'done',
 }
 
+let restTimer = 0
+
 const setMood = (mood: Mood) => {
+  clearTimeout(restTimer)
   pill.dataset.mood = queue.length > 0 ? 'needs' : mood
   showCompactMusic()
+  if (pill.dataset.mood === 'done') restTimer = window.setTimeout(() => setMood('idle'), 4000)
 }
 
 const showCompactMusic = () => {
