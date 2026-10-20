@@ -64,23 +64,26 @@ button {
   background: var(--field);
 }
 
-label {
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   align-self: stretch;
   margin-top: 8px;
-  text-align: left;
   font-weight: 500;
 }
 
-input {
+ol {
   align-self: stretch;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font: inherit;
-  color: var(--text);
-  background: var(--field);
-  outline-color: var(--blue);
+  margin: 0;
+  padding-left: 20px;
+  text-align: left;
+  line-height: 1.9;
+}
+
+#topic {
+  padding: 2px 8px;
+  font-family: ui-monospace, monospace;
 }
 
 .hint {
