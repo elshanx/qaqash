@@ -467,13 +467,8 @@ setInterval(() => {
   if (hovering) render()
 }, 60 * 1000)
 
-pill.addEventListener('mouseenter', () => {
-  hovering = true
-  render()
-})
-
-pill.addEventListener('mouseleave', () => {
-  hovering = false
+listen<boolean>('hover', ({ payload }) => {
+  hovering = payload
   render()
 })
 

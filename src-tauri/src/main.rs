@@ -277,6 +277,24 @@ fn serve(app: AppHandle) {
     }
 }
 
+fn watch_hover(app: AppHandle, window: WebviewWindow) {
+    let mut was_inside = false;
+    loop {
+        thread::sleep(Duration::from_millis(80));
+        let (Ok(cursor), Ok(origin), Ok(size)) = (app.cursor_position(), window.outer_position(), window.outer_size()) else {
+            continue;
+        };
+        let inside = cursor.x >= origin.x as f64
+            && cursor.x < (origin.x + size.width as i32) as f64
+            && cursor.y >= origin.y as f64
+            && cursor.y < (origin.y + size.height as i32) as f64;
+        if inside != was_inside {
+            was_inside = inside;
+            let _ = app.emit("hover", inside);
+        }
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
@@ -297,8 +315,10 @@ fn main() {
 
             let handle = app.handle().clone();
             let music_handle = handle.clone();
+            let hover_handle = handle.clone();
             thread::spawn(move || serve(handle));
             thread::spawn(move || watch_music(music_handle));
+            thread::spawn(move || watch_hover(hover_handle, window));
             Ok(())
         })
         .run(tauri::generate_context!())
