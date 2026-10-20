@@ -1,0 +1,180 @@
+#ask {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+#head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: linear-gradient(160deg, #3a3a3c, #1c1c1e);
+  font: 600 14px ui-monospace, monospace;
+}
+
+#icon[data-kind='question'] {
+  background: linear-gradient(160deg, #ffb340, var(--orange));
+  font: 700 20px -apple-system, system-ui, sans-serif;
+}
+
+#titles {
+  flex: 1;
+  min-width: 0;
+}
+
+#kicker {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#tool {
+  margin-top: 1px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+#actions {
+  display: flex;
+  gap: 10px;
+}
+
+#detail {
+  margin: 0;
+  max-height: 72px;
+  padding: 9px 12px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #1c1c1e;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font: 11px/1.5 ui-monospace, monospace;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#detail[data-overflowing] {
+  mask-image: linear-gradient(#000 calc(100% - 14px), transparent);
+}
+
+.round {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.round svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#deny {
+  background: #ff3b30;
+}
+
+#deny:hover,
+#deny[data-hot] {
+  background: #ff5147;
+}
+
+#allow {
+  background: #34c759;
+}
+
+#allow:hover,
+#allow[data-hot] {
+  background: #48d06b;
+}
+
+#footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+#footer button {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: #2c2c2e;
+}
+
+#footer button:hover,
+#footer button[data-hot] {
+  background: #3a3a3c;
+}
+
+#next {
+  margin-left: auto;
+  background: var(--blue) !important;
+}
+
+#next:disabled {
+  opacity: 0.35;
+}
+
+#questions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #1c1c1e;
+  font-size: 13px;
+  text-align: left;
+}
+
+.option:hover,
+.option[data-hot] {
+  background: #2c2c2e;
+}
+
+.option.picked {
+  background: rgba(10, 132, 255, 0.22);
+  box-shadow: inset 0 0 0 1.5px var(--blue);
+}
+
+.badge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.check {
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+}
+
+.picked .check {
+  background: var(--blue);
+  box-shadow: inset 0 0 0 4px #0f2a4a;
+}

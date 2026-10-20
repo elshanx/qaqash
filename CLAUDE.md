@@ -24,6 +24,12 @@ Tauri 2 (Rust backend) + Vite + vanilla TypeScript frontend. Chosen over Electro
 - The window is a fixed transparent canvas (540x560) that ignores the mouse, so it never resizes mid-animation. Rust polls the cursor and only accepts clicks over the island area the frontend reports with `set_hit_area`. It also sends the cursor position, because the webview gets no hover events while another app is in front.
 - Notch width is not exposed to Electron/Tauri. Hard-code about 190pt as a CSS variable and tune by eye. The island is black and centred in the canvas, with rounded bottom corners.
 
+## Structure
+One file per concern. Put new code in the file that owns it, or a new file for a new concern; keep `main.ts` and `main.rs` to wiring only.
+- `src/`: `main.ts` (wiring), `island.ts` (sizing and `render`), `prompts.ts`, `sessions.ts`, `music.ts`, `hover.ts`, `mood.ts`, `motion.ts` (spring curves), `hook-events.ts` (event wording), `state.ts`, `dom.ts`, `types.ts`.
+- `src/styles/`: `base`, `island`, `face`, `prompt`, `sessions`, `music`.
+- `src-tauri/src/`: `main.rs` (wiring), `window.rs` (canvas, hit area, hover), `hooks.rs` (hook server, Allow/Deny), `music.rs`, `sessions.rs`, `macos.rs` (Objective-C and AppleScript helpers).
+
 ## Rules for working here
 - Run and test locally (`npm install`, `npm run tauri dev`). Prefer verifying the notch look on screen over assuming.
 - Do not edit `~/.claude/settings.json` without asking. Provide `claude-hooks.example.json` and let the user merge it.
