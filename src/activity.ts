@@ -71,8 +71,43 @@ export const trackActivity = async (event: HookEvent) => {
   if (state.activity.hunks.length > 0) show()
 }
 
-const stepRow = (name: string, stepState: 'done' | 'running') =>
-  Object.assign(document.createElement('li'), { textContent: name, className: stepState })
+const toolIcons: Record<string, string> = {
+  Read: 'read',
+  Edit: 'edit',
+  MultiEdit: 'edit',
+  Write: 'edit',
+  NotebookEdit: 'edit',
+  Bash: 'bash',
+  Grep: 'search',
+  Glob: 'search',
+  WebFetch: 'web',
+  WebSearch: 'web',
+  Done: 'check',
+}
+
+const stepRow = (name: string, stepState: 'done' | 'running') => {
+  const row = Object.assign(document.createElement('li'), { textContent: name, className: stepState })
+  row.dataset.icon = toolIcons[name] ?? 'tool'
+  return row
+}
+
+let shownHunks: unknown = null
+
+const typeAddedLines = () => {
+  const msPerChar = 28
+  let delay = 0
+  const added = [...diffView.querySelectorAll<HTMLElement>('.add code')]
+  added.forEach((code, index) => {
+    const chars = code.textContent?.length ?? 0
+    const duration = Math.min(chars * msPerChar, 900)
+    code.style.setProperty('--chars', String(chars))
+    code.style.setProperty('--type-ms', `${duration}ms`)
+    code.style.setProperty('--type-delay', `${delay}ms`)
+    code.classList.add('typing')
+    code.toggleAttribute('data-caret', index === added.length - 1)
+    delay += duration
+  })
+}
 
 const relativePath = ({ cwd = '', tool_input: input }: HookEvent): string => {
   const path = String(input?.file_path ?? '')
@@ -93,6 +128,11 @@ export const renderActivity = () => {
   lang.textContent = name.includes('.') ? name.split('.').pop()!.slice(0, 2).toUpperCase() : ''
   lang.hidden = !lang.textContent
   filePath.textContent = `\u200E${relativePath(current.event)}\u200E`
-  renderDiff(diffView, current.hunks)
+  file.toggleAttribute('data-unsaved', !current.done && changesFiles({ hook_event_name: '', tool_name: current.steps[last] }))
+  if (current.hunks !== shownHunks) {
+    shownHunks = current.hunks
+    renderDiff(diffView, current.hunks)
+    typeAddedLines()
+  }
   activity.toggleAttribute('data-entering', activity.hidden)
 }
