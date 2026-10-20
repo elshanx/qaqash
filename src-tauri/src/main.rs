@@ -17,9 +17,8 @@ struct Pending {
 fn place(window: &WebviewWindow, width: f64, height: f64) -> tauri::Result<()> {
     let monitor = window.primary_monitor()?.unwrap();
     let screen_width = monitor.size().width as f64 / monitor.scale_factor();
-    let top = if cfg!(debug_assertions) { 40.0 } else { 0.0 };
     window.set_size(LogicalSize::new(width, height))?;
-    window.set_position(LogicalPosition::new((screen_width - width) / 2.0, top))
+    window.set_position(LogicalPosition::new((screen_width - width) / 2.0, 0.0))
 }
 
 #[tauri::command]

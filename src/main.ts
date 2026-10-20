@@ -158,7 +158,7 @@ const render = async () => {
   ask.hidden = !first
   sessionList.hidden = !showSessions
   const open = Boolean(first) || showSessions
-  await size(open ? 460 : 400, open ? 38 + content.offsetHeight : 38)
+  await size(open ? 460 : 330, open ? 38 + content.offsetHeight : 38)
 }
 
 const track = (event: HookEvent) => {

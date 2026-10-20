@@ -22,7 +22,7 @@ body {
 }
 
 #pill {
-  --w: 400px;
+  --w: 330px;
   --h: 38px;
   position: relative;
   width: var(--w);
@@ -75,7 +75,7 @@ body {
 
 #face {
   position: absolute;
-  left: 20px;
+  left: 22px;
   display: flex;
   gap: 5px;
   align-items: center;
@@ -131,7 +131,8 @@ body {
 }
 
 #status {
-  margin-left: calc(50% + var(--notch-width) / 2 - 16px);
+  margin-left: calc(50% + var(--notch-width) / 2 - 8px);
+  font-size: 11px;
   opacity: 0.8;
   white-space: nowrap;
   overflow: hidden;
