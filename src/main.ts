@@ -420,6 +420,7 @@ const render = async () => {
   detail.toggleAttribute('data-overflowing', !detail.hidden && detail.scrollHeight > 72)
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
+  markHot()
   await size(open ? openWidth : collapsedWidth, open ? barHeight + content.offsetHeight : barHeight)
 }
 
@@ -478,8 +479,22 @@ setInterval(() => {
   if (hovering) render()
 }, 60 * 1000)
 
-listen<boolean>('hover', ({ payload }) => {
-  hovering = payload
+let pointer: [number, number] | null = null
+let hot: Element | null = null
+
+const markHot = () => {
+  const target = pointer && document.elementFromPoint(...pointer)?.closest('[data-open-source], button')
+  if (target === hot) return
+  hot?.removeAttribute('data-hot')
+  target?.setAttribute('data-hot', '')
+  hot = target ?? null
+}
+
+listen<[number, number] | null>('hover', ({ payload }) => {
+  pointer = payload
+  markHot()
+  if (hovering === Boolean(payload)) return
+  hovering = Boolean(payload)
   render()
 })
 

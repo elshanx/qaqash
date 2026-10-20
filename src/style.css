@@ -280,7 +280,8 @@ button:active {
   background: #ff3b30;
 }
 
-#deny:hover {
+#deny:hover,
+#deny[data-hot] {
   background: #ff5147;
 }
 
@@ -288,7 +289,8 @@ button:active {
   background: #34c759;
 }
 
-#allow:hover {
+#allow:hover,
+#allow[data-hot] {
   background: #48d06b;
 }
 
@@ -304,7 +306,8 @@ button:active {
   background: #2c2c2e;
 }
 
-#footer button:hover {
+#footer button:hover,
+#footer button[data-hot] {
   background: #3a3a3c;
 }
 
@@ -330,6 +333,41 @@ button:active {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+#sessions li[data-open-source] {
+  position: relative;
+  margin: -5px -10px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  transition: background-color 0.15s;
+}
+
+#sessions li[data-open-source]:hover,
+#sessions li[data-open-source][data-hot] {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#sessions li[data-open-source]:active {
+  background: rgba(255, 255, 255, 0.16);
+  transition-duration: 0s;
+}
+
+#sessions li[data-open-source]::after {
+  content: '↗';
+  position: absolute;
+  right: 10px;
+  opacity: 0;
+  font-size: 11px;
+  transform: translateX(-4px);
+  transition: opacity 0.2s, transform 0.2s var(--ease);
+}
+
+#sessions li[data-open-source]:hover::after,
+#sessions li[data-open-source][data-hot]::after {
+  opacity: 0.55;
+  transform: none;
 }
 
 #sessions[data-entering] li {
@@ -358,6 +396,15 @@ button:active {
   background: var(--green);
 }
 
+#sessions li[data-open-source] span:last-child {
+  transition: transform 0.2s var(--ease);
+}
+
+#sessions li[data-open-source]:hover span:last-child,
+#sessions li[data-open-source][data-hot] span:last-child {
+  transform: translateX(-16px);
+}
+
 #sessions span:last-child {
   margin-left: auto;
   opacity: 0.55;
@@ -384,7 +431,8 @@ button:active {
   text-align: left;
 }
 
-.option:hover {
+.option:hover,
+.option[data-hot] {
   background: #2c2c2e;
 }
 
@@ -556,11 +604,12 @@ button:active {
   transition: opacity 0.15s, transform 0.2s var(--pop);
 }
 
-[data-open-source]:hover {
+[data-open-source]:hover,
+[data-open-source][data-hot] {
   opacity: 0.8;
 }
 
-[data-open-source]:active {
+[data-open-source]:not(li):active {
   transform: scale(0.96);
 }
 
@@ -623,7 +672,8 @@ button:active {
   border-radius: 50%;
 }
 
-#controls button:hover {
+#controls button:hover,
+#controls button[data-hot] {
   background: rgba(255, 255, 255, 0.1);
 }
 

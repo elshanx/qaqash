@@ -317,19 +317,19 @@ fn serve(app: AppHandle) {
 }
 
 fn watch_hover(app: AppHandle, window: WebviewWindow) {
-    let mut was_inside = false;
+    let mut last = None;
     loop {
-        thread::sleep(Duration::from_millis(80));
-        let (Ok(cursor), Ok(origin), Ok(size)) = (app.cursor_position(), window.outer_position(), window.outer_size()) else {
+        thread::sleep(Duration::from_millis(50));
+        let (Ok(cursor), Ok(origin), Ok(size), Ok(scale)) = (app.cursor_position(), window.outer_position(), window.outer_size(), window.scale_factor()) else {
             continue;
         };
-        let inside = cursor.x >= origin.x as f64
-            && cursor.x < (origin.x + size.width as i32) as f64
-            && cursor.y >= origin.y as f64
-            && cursor.y < (origin.y + size.height as i32) as f64;
-        if inside != was_inside {
-            was_inside = inside;
-            let _ = app.emit("hover", inside);
+        let x = cursor.x - origin.x as f64;
+        let y = cursor.y - origin.y as f64;
+        let inside = x >= 0.0 && x < size.width as f64 && y >= 0.0 && y < size.height as f64;
+        let pointer = inside.then(|| ((x / scale).round() as i32, (y / scale).round() as i32));
+        if pointer != last {
+            last = pointer;
+            let _ = app.emit("hover", pointer);
         }
     }
 }
