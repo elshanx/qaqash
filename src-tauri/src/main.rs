@@ -27,9 +27,12 @@ fn menu_bar_height(window: WebviewWindow) -> Result<f64, String> {
     Ok(monitor.work_area().position.y as f64 / monitor.scale_factor())
 }
 
+const CANVAS: (f64, f64) = (540.0, 560.0);
+static HIT_AREA: Mutex<(f64, f64)> = Mutex::new((0.0, 0.0));
+
 #[tauri::command]
-fn resize(window: WebviewWindow, width: f64, height: f64) -> Result<(), String> {
-    place(&window, width, height).map_err(|e| e.to_string())
+fn set_hit_area(width: f64, height: f64) {
+    *HIT_AREA.lock().unwrap() = (width, height);
 }
 
 #[tauri::command]
@@ -319,14 +322,18 @@ fn serve(app: AppHandle) {
 fn watch_hover(app: AppHandle, window: WebviewWindow) {
     let mut last = None;
     loop {
-        thread::sleep(Duration::from_millis(50));
-        let (Ok(cursor), Ok(origin), Ok(size), Ok(scale)) = (app.cursor_position(), window.outer_position(), window.outer_size(), window.scale_factor()) else {
+        thread::sleep(Duration::from_millis(30));
+        let (Ok(cursor), Ok(origin), Ok(scale)) = (app.cursor_position(), window.outer_position(), window.scale_factor()) else {
             continue;
         };
-        let x = cursor.x - origin.x as f64;
-        let y = cursor.y - origin.y as f64;
-        let inside = x >= 0.0 && x < size.width as f64 && y >= 0.0 && y < size.height as f64;
-        let pointer = inside.then(|| ((x / scale).round() as i32, (y / scale).round() as i32));
+        let x = (cursor.x - origin.x as f64) / scale;
+        let y = (cursor.y - origin.y as f64) / scale;
+        let (width, height) = *HIT_AREA.lock().unwrap();
+        let inside = (x - CANVAS.0 / 2.0).abs() < width / 2.0 && y >= 0.0 && y < height;
+        let pointer = inside.then(|| (x.round() as i32, y.round() as i32));
+        if pointer.is_some() != last.is_some() {
+            let _ = window.set_ignore_cursor_events(!inside);
+        }
         if pointer != last {
             last = pointer;
             let _ = app.emit("hover", pointer);
@@ -337,12 +344,13 @@ fn watch_hover(app: AppHandle, window: WebviewWindow) {
 fn main() {
     tauri::Builder::default()
         .manage(Pending::default())
-        .invoke_handler(tauri::generate_handler![resize, decide, forget, menu_bar_height, music_control, music_artwork, open_session])
+        .invoke_handler(tauri::generate_handler![set_hit_area, decide, forget, menu_bar_height, music_control, music_artwork, open_session])
         .setup(|app| {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             let window = app.get_webview_window("main").unwrap();
-            place(&window, 370.0, 38.0)?;
+            place(&window, CANVAS.0, CANVAS.1)?;
+            window.set_ignore_cursor_events(true)?;
 
             let ns_window = window.ns_window()? as *const objc2::runtime::AnyObject;
             unsafe {

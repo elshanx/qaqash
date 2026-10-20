@@ -95,14 +95,10 @@ document.documentElement.style.setProperty('--spring-ms', `${morph.ms}ms`)
 document.documentElement.style.setProperty('--pop', pop.easing)
 document.documentElement.style.setProperty('--pop-ms', `${pop.ms}ms`)
 
-const ear = 12
-const shadowRoom = 28
 const collapsedWidth = 330
 const openWidth = 460
 document.documentElement.style.setProperty('--open-w', `${openWidth}px`)
 let barHeight = 33
-let windowSize = { width: 0, height: 0 }
-let shrinkTimer = 0
 let renderId = 0
 let bumpTimer = 0
 
@@ -336,20 +332,11 @@ const renderQuestionStep = (request: Ask, more: string) => {
   footer.hidden = next.hidden && back.hidden
 }
 
-const resizeWindow = async (width: number, height: number) => {
-  windowSize = { width, height }
-  await invoke('resize', { width: width + ear * 2, height: height > barHeight ? height + shadowRoom : height })
-}
-
-const size = async (width: number, height: number) => {
-  clearTimeout(shrinkTimer)
-  if (width > windowSize.width || height > windowSize.height) {
-    await resizeWindow(Math.max(width, windowSize.width), Math.max(height, windowSize.height))
-  }
+const size = (width: number, height: number) => {
   pill.style.setProperty('--w', `${width}px`)
   pill.style.setProperty('--h', `${height}px`)
   pill.toggleAttribute('data-open', height > barHeight)
-  shrinkTimer = window.setTimeout(() => resizeWindow(width, height), morph.ms)
+  invoke('set_hit_area', { width, height })
 }
 
 const projectOf = (event: HookEvent): string =>
@@ -397,7 +384,8 @@ const render = async () => {
   const open = Boolean(first) || showSessions || showPlayer
   if (!open && pill.hasAttribute('data-open')) {
     content.setAttribute('data-leaving', '')
-    await sleep(140)
+    size(collapsedWidth, barHeight)
+    await sleep(morph.ms)
     if (id !== renderId) return
   }
   content.removeAttribute('data-leaving')
@@ -421,7 +409,7 @@ const render = async () => {
   sessionList.hidden = !showSessions
   player.hidden = !showPlayer
   markHot()
-  await size(open ? openWidth : collapsedWidth, open ? barHeight + content.offsetHeight : barHeight)
+  size(open ? openWidth : collapsedWidth, open ? barHeight + content.offsetHeight : barHeight)
 }
 
 const trackSession = (event: HookEvent) => {
