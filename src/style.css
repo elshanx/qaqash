@@ -533,6 +533,12 @@ button:active {
 
 #island:not([data-open])[data-music] #face {
   transform: translateX(26px);
+  animation: groove 0.5s ease-in-out infinite;
+}
+
+@keyframes groove {
+  30% { translate: 0 -2px; }
+  60% { translate: 0 0.5px; }
 }
 
 .art {
