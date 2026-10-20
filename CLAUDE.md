@@ -21,7 +21,7 @@ Tauri 2 (Rust backend) + Vite + vanilla TypeScript frontend. Chosen over Electro
 - Frameless, transparent, always on top, no Dock icon (ActivationPolicy::Accessory), `macOSPrivateApi` true (Cargo feature `macos-private-api` must match), `acceptFirstMouse` true, visible on all workspaces.
 - Position: top-centre of the primary monitor at y=0.
 - macOS pushes windows below the menu bar. Raise the NSWindow level to 25 via the `objc2` crate (`msg_send![ns_window, setLevel: 25isize]`).
-- Resize the window per state (collapsed about 370x38, expanded about 460x210) through a Rust `resize` command that also re-centres it. A big transparent window would block clicks on the menu bar.
+- The window is a fixed transparent canvas (540x560) that ignores the mouse, so it never resizes mid-animation. Rust polls the cursor and only accepts clicks over the pill area the frontend reports with `set_hit_area`. It also sends the cursor position, because the webview gets no hover events while another app is in front.
 - Notch width is not exposed to Electron/Tauri. Hard-code about 190pt as a CSS variable and tune by eye. The pill is full window width, black, with border-radius 0 0 20px 20px.
 
 ## Rules for working here
