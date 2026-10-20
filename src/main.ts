@@ -31,8 +31,14 @@ const content = document.getElementById('content')!
 const tool = document.getElementById('tool')!
 const detail = document.getElementById('detail')!
 const questionList = document.getElementById('questions')!
-const allow = document.getElementById('allow') as HTMLButtonElement
+const allow = document.getElementById('allow')!
 const deny = document.getElementById('deny')!
+const icon = document.getElementById('icon')!
+const kicker = document.getElementById('kicker')!
+const actions = document.getElementById('actions')!
+const footer = document.getElementById('footer')!
+const back = document.getElementById('back')!
+const next = document.getElementById('next') as HTMLButtonElement
 
 type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 
@@ -71,6 +77,7 @@ const ear = 12
 const shadowRoom = 28
 const collapsedWidth = 330
 const openWidth = 460
+document.documentElement.style.setProperty('--open-w', `${openWidth}px`)
 let barHeight = 33
 let windowSize = { width: 0, height: 0 }
 let shrinkTimer = 0
@@ -109,23 +116,27 @@ const questionsOf = (request: Ask): Question[] =>
 
 const pick = (question: Question, label: string) => {
   const current = picks.get(question.question) ?? []
-  const next = !question.multiSelect
+  const chosen = !question.multiSelect
     ? [label]
     : current.includes(label) ? current.filter((picked) => picked !== label) : [...current, label]
-  picks.set(question.question, next)
-  const [first] = queue
-  const isLast = first && step >= questionsOf(first).length - 1
-  if (!question.multiSelect && !isLast) {
+  picks.set(question.question, chosen)
+  render()
+  if (!question.multiSelect) {
     const from = step
     window.setTimeout(() => {
-      if (step === from) goTo(from + 1)
+      if (step === from) advance()
     }, 180)
   }
-  render()
 }
 
-const goTo = (next: number) => {
-  step = next
+const advance = () => {
+  const [first] = queue
+  if (first && step < questionsOf(first).length - 1) goTo(step + 1)
+  else decide(true)
+}
+
+const goTo = (target: number) => {
+  step = target
   render()
   questionList.animate(
     [{ opacity: 0, transform: 'translateX(12px)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'none' }],
@@ -133,18 +144,53 @@ const goTo = (next: number) => {
   )
 }
 
-const renderQuestion = (question: Question): HTMLElement => {
-  const block = document.createElement('div')
-  block.append(Object.assign(document.createElement('div'), { textContent: question.question }))
-  const options = Object.assign(document.createElement('div'), { className: 'options' })
-  options.append(...question.options.map(({ label }) => {
-    const button = Object.assign(document.createElement('button'), { textContent: label })
-    button.classList.toggle('picked', picks.get(question.question)?.includes(label) ?? false)
-    button.addEventListener('click', () => pick(question, label))
-    return button
-  }))
-  block.append(options)
-  return block
+const recommended = / ?\(recommended\)/i
+
+const renderOption = (question: Question, label: string): HTMLElement => {
+  const button = Object.assign(document.createElement('button'), { className: 'option' })
+  button.append(Object.assign(document.createElement('span'), { textContent: label.replace(recommended, '') }))
+  if (recommended.test(label)) {
+    button.append(Object.assign(document.createElement('span'), { className: 'badge', textContent: 'Recommended' }))
+  }
+  if (question.multiSelect) button.append(Object.assign(document.createElement('span'), { className: 'check' }))
+  button.classList.toggle('picked', picks.get(question.question)?.includes(label) ?? false)
+  button.addEventListener('click', () => pick(question, label))
+  return button
+}
+
+const iconFor = (toolName = ''): string =>
+  toolName === 'Bash' ? '>_' : toolName.slice(0, 1).toUpperCase() || '?'
+
+const renderPermission = (request: Ask, more: string) => {
+  icon.dataset.kind = 'permission'
+  icon.textContent = iconFor(request.event.tool_name)
+  kicker.textContent = `${projectOf(request.event)} wants to use${more}`
+  tool.textContent = request.event.tool_name ?? 'a tool'
+  detail.textContent = summarize(request.event.tool_input)
+  detail.hidden = false
+  detail.toggleAttribute('data-overflowing', detail.scrollHeight > 72)
+  actions.hidden = false
+  questionList.hidden = true
+  footer.hidden = true
+}
+
+const renderQuestionStep = (request: Ask, more: string) => {
+  const questions = questionsOf(request)
+  const current = questions[step]
+  const counter = questions.length > 1 ? ` · ${step + 1} of ${questions.length}` : ''
+  icon.dataset.kind = 'question'
+  icon.textContent = '?'
+  kicker.textContent = `${projectOf(request.event)} asks${counter}${more}`
+  tool.textContent = current?.question ?? ''
+  questionList.replaceChildren(...(current?.options ?? []).map(({ label }) => renderOption(current, label)))
+  detail.hidden = true
+  actions.hidden = true
+  questionList.hidden = false
+  next.hidden = !current?.multiSelect
+  next.textContent = step < questions.length - 1 ? 'Next' : 'Send'
+  next.disabled = !picks.get(current?.question ?? '')?.length
+  back.hidden = step === 0
+  footer.hidden = next.hidden && back.hidden
 }
 
 const resizeWindow = async (width: number, height: number) => {
@@ -210,21 +256,9 @@ const render = async () => {
   clearTimeout(bumpTimer)
   showStatus(first ? projectOf(first.event) : lastStatus)
   if (first) {
-    const more = queue.length > 1 ? ` (+${queue.length - 1})` : ''
-    const isQuestion = first.kind === 'question'
-    const questions = questionsOf(first)
-    const current = questions[step]
-    const isLast = step >= questions.length - 1
-    const counter = questions.length > 1 ? ` · ${step + 1}/${questions.length}` : ''
-    tool.textContent = isQuestion ? `Claude asks${counter}${more}` : `Allow ${first.event.tool_name ?? 'tool'}?${more}`
-    detail.hidden = isQuestion
-    questionList.hidden = !isQuestion
-    deny.hidden = isQuestion && step === 0
-    deny.textContent = isQuestion ? 'Back' : 'Deny'
-    allow.textContent = !isQuestion ? 'Allow' : isLast ? 'Send' : 'Next'
-    detail.textContent = isQuestion ? '' : summarize(first.event.tool_input)
-    questionList.replaceChildren(...(isQuestion && current ? [renderQuestion(current)] : []))
-    allow.disabled = isQuestion && !picks.get(current?.question ?? '')?.length
+    const more = queue.length > 1 ? ` · +${queue.length - 1} more` : ''
+    if (first.kind === 'question') renderQuestionStep(first, more)
+    else renderPermission(first, more)
   }
   if (showSessions) {
     sessionList.toggleAttribute('data-entering', sessionList.hidden)
@@ -273,17 +307,10 @@ const dropStale = (event: HookEvent) => {
   if (queue.length !== before) render()
 }
 
-const isAskingQuestion = () => queue[0]?.kind === 'question'
-
-allow.addEventListener('click', () => {
-  if (isAskingQuestion() && step < questionsOf(queue[0]).length - 1) goTo(step + 1)
-  else decide(true)
-})
-
-deny.addEventListener('click', () => {
-  if (isAskingQuestion()) goTo(step - 1)
-  else decide(false)
-})
+allow.addEventListener('click', () => decide(true))
+deny.addEventListener('click', () => decide(false))
+next.addEventListener('click', advance)
+back.addEventListener('click', () => goTo(step - 1))
 
 setInterval(() => {
   const cutoff = Date.now() - staleAfter

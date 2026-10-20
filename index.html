@@ -11,12 +11,26 @@
         <div id="content">
           <ul id="sessions" hidden></ul>
           <div id="ask" hidden>
-            <div id="tool"></div>
+            <div id="head">
+              <div id="icon"></div>
+              <div id="titles">
+                <div id="kicker"></div>
+                <div id="tool"></div>
+              </div>
+              <div id="actions">
+                <button id="deny" class="round" aria-label="Deny">
+                  <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" /></svg>
+                </button>
+                <button id="allow" class="round" aria-label="Allow">
+                  <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                </button>
+              </div>
+            </div>
             <pre id="detail"></pre>
             <div id="questions"></div>
-            <div id="buttons">
-              <button id="deny">Deny</button>
-              <button id="allow">Allow</button>
+            <div id="footer">
+              <button id="back">Back</button>
+              <button id="next">Next</button>
             </div>
           </div>
         </div>
