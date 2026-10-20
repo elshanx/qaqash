@@ -128,10 +128,8 @@ const setMood = (mood: Mood) => {
   showCompactMusic()
 }
 
-const claudeIsBusy = () => pill.dataset.mood === 'thinking' || pill.dataset.mood === 'needs'
-
 const showCompactMusic = () => {
-  pill.toggleAttribute('data-music', Boolean(track?.playing) && !claudeIsBusy())
+  pill.toggleAttribute('data-music', Boolean(track?.playing) && pill.dataset.mood !== 'needs')
 }
 
 const hueOf = (text: string) => [...text].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 360, 7)
@@ -145,14 +143,66 @@ const spotifyCover = (url = ''): string | null => {
   }
 }
 
+const vivid = (red: number, green: number, blue: number): string => {
+  const [r, g, b] = [red / 255, green / 255, blue / 255]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const delta = max - min
+  const hue = delta === 0 ? 0
+    : max === r ? 60 * (((g - b) / delta) % 6)
+    : max === g ? 60 * ((b - r) / delta + 2)
+    : 60 * ((r - g) / delta + 4)
+  const lightness = (max + min) / 2
+  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1))
+  const keepGrey = saturation < 0.12
+  return `hsl(${Math.round((hue + 360) % 360)} ${keepGrey ? 0 : Math.max(55, saturation * 100)}% ${Math.min(72, Math.max(58, lightness * 100))}%)`
+}
+
+const tintFrom = (url: string) => {
+  const image = new Image()
+  image.crossOrigin = 'anonymous'
+  image.onload = () => {
+    const size = 12
+    const canvas = Object.assign(document.createElement('canvas'), { width: size, height: size })
+    const context = canvas.getContext('2d')
+    if (!context) return
+    context.drawImage(image, 0, 0, size, size)
+    let pixels: Uint8ClampedArray
+    try {
+      pixels = context.getImageData(0, 0, size, size).data
+    } catch {
+      return
+    }
+    let red = 0
+    let green = 0
+    let blue = 0
+    let total = 0
+    for (let index = 0; index < pixels.length; index += 4) {
+      const [r, g, b] = [pixels[index], pixels[index + 1], pixels[index + 2]]
+      const max = Math.max(r, g, b)
+      const weight = ((max - Math.min(r, g, b)) * max) / 255 + 1
+      red += r * weight
+      green += g * weight
+      blue += b * weight
+      total += weight
+    }
+    if (currentCover === url) pill.style.setProperty('--tint', vivid(red / total, green / total, blue / total))
+  }
+  image.src = url
+}
+
+let currentCover: string | null = null
+
 const paintArtwork = () => {
   const cover = musicAppArtwork ?? spotifyCover(track?.artworkUrl)
+  currentCover = cover
   document.querySelectorAll<HTMLElement>('.art').forEach((element) => {
     element.style.setProperty('--hue', String(hueOf(track?.album ?? '')))
     if (cover) element.style.setProperty('--art', `url("${cover}")`)
     else element.style.removeProperty('--art')
   })
   pill.style.setProperty('--tint', `hsl(${hueOf(track?.album ?? '')} 75% 65%)`)
+  if (cover) tintFrom(cover)
 }
 
 const clock = (totalSeconds: number) => {
