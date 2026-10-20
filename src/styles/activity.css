@@ -257,8 +257,9 @@
 [data-mood='thinking'] #avatar::before {
   content: '•••';
   position: absolute;
-  top: 2px;
-  left: -8px;
+  z-index: 1;
+  top: -7px;
+  left: -13px;
   display: grid;
   place-items: center;
   width: 22px;
