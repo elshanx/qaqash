@@ -38,6 +38,7 @@ type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 
 let queue: Ask[] = []
 const picks = new Map<string, string[]>()
+let step = 0
 let hovering = false
 let lastStatus = 'peep'
 const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
@@ -111,7 +112,24 @@ const pick = (question: Question, label: string) => {
     ? [label]
     : current.includes(label) ? current.filter((picked) => picked !== label) : [...current, label]
   picks.set(question.question, next)
+  const [first] = queue
+  const isLast = first && step >= questionsOf(first).length - 1
+  if (!question.multiSelect && !isLast) {
+    const from = step
+    window.setTimeout(() => {
+      if (step === from) goTo(from + 1)
+    }, 180)
+  }
   render()
+}
+
+const goTo = (next: number) => {
+  step = next
+  render()
+  questionList.animate(
+    [{ opacity: 0, transform: 'translateX(12px)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'none' }],
+    { duration: 320, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+  )
 }
 
 const renderQuestion = (question: Question): HTMLElement => {
@@ -193,14 +211,19 @@ const render = async () => {
   if (first) {
     const more = queue.length > 1 ? ` (+${queue.length - 1})` : ''
     const isQuestion = first.kind === 'question'
-    tool.textContent = isQuestion ? `Claude asks${more}` : `Allow ${first.event.tool_name ?? 'tool'}?${more}`
+    const questions = questionsOf(first)
+    const current = questions[step]
+    const isLast = step >= questions.length - 1
+    const counter = questions.length > 1 ? ` · ${step + 1}/${questions.length}` : ''
+    tool.textContent = isQuestion ? `Claude asks${counter}${more}` : `Allow ${first.event.tool_name ?? 'tool'}?${more}`
     detail.hidden = isQuestion
     questionList.hidden = !isQuestion
-    deny.hidden = isQuestion
-    allow.textContent = isQuestion ? 'Send' : 'Allow'
+    deny.hidden = isQuestion && step === 0
+    deny.textContent = isQuestion ? 'Back' : 'Deny'
+    allow.textContent = !isQuestion ? 'Allow' : isLast ? 'Send' : 'Next'
     detail.textContent = isQuestion ? '' : summarize(first.event.tool_input)
-    questionList.replaceChildren(...(isQuestion ? questionsOf(first).map(renderQuestion) : []))
-    allow.disabled = isQuestion && questionsOf(first).some(({ question }) => !picks.get(question)?.length)
+    questionList.replaceChildren(...(isQuestion && current ? [renderQuestion(current)] : []))
+    allow.disabled = isQuestion && !picks.get(current?.question ?? '')?.length
   }
   if (showSessions) {
     sessionList.toggleAttribute('data-entering', sessionList.hidden)
@@ -223,7 +246,10 @@ const track = (event: HookEvent) => {
 }
 
 const remove = (id: number) => {
-  if (queue[0]?.id === id) picks.clear()
+  if (queue[0]?.id === id) {
+    picks.clear()
+    step = 0
+  }
   queue = queue.filter((request) => request.id !== id)
 }
 
@@ -246,8 +272,17 @@ const dropStale = (event: HookEvent) => {
   if (queue.length !== before) render()
 }
 
-allow.addEventListener('click', () => decide(true))
-deny.addEventListener('click', () => decide(false))
+const isAskingQuestion = () => queue[0]?.kind === 'question'
+
+allow.addEventListener('click', () => {
+  if (isAskingQuestion() && step < questionsOf(queue[0]).length - 1) goTo(step + 1)
+  else decide(true)
+})
+
+deny.addEventListener('click', () => {
+  if (isAskingQuestion()) goTo(step - 1)
+  else decide(false)
+})
 
 setInterval(() => {
   const cutoff = Date.now() - staleAfter
