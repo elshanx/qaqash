@@ -26,17 +26,24 @@ const pill = document.getElementById('pill')!
 const status = document.getElementById('status')!
 const ask = document.getElementById('ask')!
 const sessionList = document.getElementById('sessions')!
+const content = document.getElementById('content')!
 const tool = document.getElementById('tool')!
 const detail = document.getElementById('detail')!
 const questionList = document.getElementById('questions')!
 const allow = document.getElementById('allow') as HTMLButtonElement
 const deny = document.getElementById('deny')!
 
+type Mood = 'idle' | 'thinking' | 'needs' | 'done'
+
 let queue: Ask[] = []
 const picks = new Map<string, string[]>()
 let hovering = false
-const sessions = new Map<string, { name: string, state: string, seen: number }>()
+const sessions = new Map<string, { name: string, state: string, mood: Mood, seen: number }>()
 const staleAfter = 30 * 60 * 1000
+const ear = 12
+const springMs = 450
+let windowSize = { width: 0, height: 0 }
+let shrinkTimer = 0
 
 const describe = (event: HookEvent): string => {
   switch (event.hook_event_name) {
@@ -49,8 +56,6 @@ const describe = (event: HookEvent): string => {
     default: return event.hook_event_name
   }
 }
-
-type Mood = 'idle' | 'thinking' | 'needs' | 'done'
 
 const moods: Record<string, Mood> = {
   UserPromptSubmit: 'thinking',
@@ -92,37 +97,54 @@ const renderQuestion = (question: Question): HTMLElement => {
   return block
 }
 
+const resizeWindow = async (width: number, height: number) => {
+  windowSize = { width, height }
+  await invoke('resize', { width: width + ear * 2, height })
+}
+
+const size = async (width: number, height: number) => {
+  clearTimeout(shrinkTimer)
+  if (width > windowSize.width || height > windowSize.height) {
+    await resizeWindow(Math.max(width, windowSize.width), Math.max(height, windowSize.height))
+  }
+  pill.style.setProperty('--w', `${width}px`)
+  pill.style.setProperty('--h', `${height}px`)
+  pill.toggleAttribute('data-open', height > 38)
+  shrinkTimer = window.setTimeout(() => resizeWindow(width, height), springMs)
+}
+
+const sessionRow = ({ name, state, mood }: { name: string, state: string, mood: Mood }, index: number) => {
+  const row = document.createElement('li')
+  row.dataset.mood = mood
+  row.style.setProperty('--i', String(index))
+  row.append(Object.assign(document.createElement('span'), { textContent: name }))
+  row.append(Object.assign(document.createElement('span'), { textContent: state }))
+  return row
+}
+
 const render = async () => {
   const [first] = queue
-  sessionList.hidden = true
-  ask.hidden = true
+  const showSessions = !first && hovering && sessions.size > 0
   if (first) {
     const more = queue.length > 1 ? ` (+${queue.length - 1})` : ''
     const isQuestion = first.kind === 'question'
     tool.textContent = isQuestion ? `Claude asks${more}` : `Allow ${first.event.tool_name ?? 'tool'}?${more}`
     detail.hidden = isQuestion
+    questionList.hidden = !isQuestion
     deny.hidden = isQuestion
     allow.textContent = isQuestion ? 'Send' : 'Allow'
     detail.textContent = isQuestion ? '' : summarize(first.event.tool_input)
     questionList.replaceChildren(...(isQuestion ? questionsOf(first).map(renderQuestion) : []))
     allow.disabled = isQuestion && questionsOf(first).some(({ question }) => !picks.get(question)?.length)
-    ask.hidden = false
-    const height = isQuestion ? 38 + ask.scrollHeight : 210
-    await invoke('resize', { width: 460, height })
-    return
   }
-  if (hovering && sessions.size > 0) {
-    sessionList.replaceChildren(...[...sessions.values()].map(({ name, state }) => {
-      const row = document.createElement('li')
-      row.append(Object.assign(document.createElement('span'), { textContent: name }))
-      row.append(Object.assign(document.createElement('span'), { textContent: state }))
-      return row
-    }))
-    sessionList.hidden = false
-    await invoke('resize', { width: 460, height: 38 + sessions.size * 21 + 12 })
-    return
+  if (showSessions) {
+    sessionList.toggleAttribute('data-entering', sessionList.hidden)
+    sessionList.replaceChildren(...[...sessions.values()].map(sessionRow))
   }
-  await invoke('resize', { width: 370, height: 38 })
+  ask.hidden = !first
+  sessionList.hidden = !showSessions
+  const open = Boolean(first) || showSessions
+  await size(open ? 460 : 400, open ? 38 + content.offsetHeight : 38)
 }
 
 const track = (event: HookEvent) => {
@@ -131,7 +153,7 @@ const track = (event: HookEvent) => {
     sessions.delete(event.session_id)
   } else {
     const name = event.cwd?.split('/').pop() || event.session_id.slice(0, 8)
-    sessions.set(event.session_id, { name, state: describe(event), seen: Date.now() })
+    sessions.set(event.session_id, { name, state: describe(event), mood: moods[event.hook_event_name] ?? 'thinking', seen: Date.now() })
   }
   if (hovering) render()
 }
@@ -182,7 +204,14 @@ pill.addEventListener('mouseleave', () => {
 })
 
 listen<HookEvent>('status', ({ payload }) => {
-  status.textContent = describe(payload)
+  const text = describe(payload)
+  if (status.textContent !== text) {
+    status.textContent = text
+    status.animate(
+      [{ opacity: 0, transform: 'translateY(4px)', filter: 'blur(3px)' }, { opacity: 0.8, transform: 'none', filter: 'none' }],
+      { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    )
+  }
   dropStale(payload)
   track(payload)
   setMood(moods[payload.hook_event_name] ?? 'thinking')
@@ -199,3 +228,5 @@ listen<number>('expired', ({ payload }) => {
   setMood('thinking')
   render()
 })
+
+render()

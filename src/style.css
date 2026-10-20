@@ -1,5 +1,11 @@
 :root {
   --notch-width: 190px;
+  --ear: 12px;
+  --spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --orange: #ff9f0a;
+  --green: #30d158;
+  --blue: #0a84ff;
 }
 
 html,
@@ -9,32 +15,67 @@ body {
   background: transparent;
   overflow: hidden;
   font: 12px -apple-system, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
   color: #fff;
   user-select: none;
   cursor: default;
 }
 
 #pill {
-  height: 100%;
+  --w: 400px;
+  --h: 38px;
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+  margin: 0 auto;
   background: #000;
-  border-radius: 0 0 20px 20px;
-  display: flex;
-  flex-direction: column;
-  padding: 0 16px;
-  box-sizing: border-box;
+  border-radius: 0 0 14px 14px;
+  transition: width 0.45s var(--spring), height 0.45s var(--spring), border-radius 0.45s var(--ease);
+}
+
+#pill[data-open] {
+  border-radius: 0 0 24px 24px;
+}
+
+#pill::before,
+#pill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: var(--ear);
+  height: var(--ear);
+}
+
+#pill::before {
+  left: calc(-1 * var(--ear));
+  background: radial-gradient(circle at 0 100%, transparent var(--ear), #000 calc(var(--ear) + 0.5px));
+}
+
+#pill::after {
+  right: calc(-1 * var(--ear));
+  background: radial-gradient(circle at 100% 100%, transparent var(--ear), #000 calc(var(--ear) + 0.5px));
 }
 
 #bar {
   position: relative;
   height: 38px;
-  flex-shrink: 0;
+  padding: 0 16px;
   display: flex;
   align-items: center;
 }
 
+#drawer {
+  height: calc(100% - 38px);
+  overflow: hidden;
+}
+
+#content {
+  padding: 0 18px 16px;
+}
+
 #face {
   position: absolute;
-  left: 6px;
+  left: 20px;
   display: flex;
   gap: 5px;
   align-items: center;
@@ -43,8 +84,10 @@ body {
 #face i {
   width: 6px;
   height: 9px;
+  border: 0 solid transparent;
   border-radius: 3px;
   background: #fff;
+  transition: width 0.3s var(--spring), height 0.3s var(--spring), background 0.3s, border-color 0.3s;
   animation: blink 4s infinite;
 }
 
@@ -56,17 +99,17 @@ body {
   width: 8px;
   height: 11px;
   border-radius: 4px;
-  background: #ff9f0a;
-  animation: none;
+  background: var(--orange);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 [data-mood='done'] #face i {
   height: 4px;
-  background: none;
-  border: 2px solid #30d158;
-  border-bottom: 0;
+  background: transparent;
+  border-width: 2px 2px 0;
+  border-color: var(--green);
   border-radius: 6px 6px 0 0;
-  animation: none;
+  animation: hop 0.5s var(--spring);
 }
 
 @keyframes blink {
@@ -79,36 +122,59 @@ body {
   to { transform: translateX(2px); }
 }
 
+@keyframes pulse {
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 4px var(--orange)); }
+}
+
+@keyframes hop {
+  40% { transform: translateY(-3px); }
+}
+
 #status {
   margin-left: calc(50% + var(--notch-width) / 2 - 16px);
   opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ask,
+#sessions[data-entering] {
+  animation: rise 0.35s var(--ease) both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); filter: blur(4px); }
 }
 
 #ask {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  min-height: 0;
-  padding-bottom: 14px;
+  gap: 10px;
+  padding-top: 4px;
 }
 
-#ask[hidden] {
-  display: none;
+[hidden] {
+  display: none !important;
 }
 
 #tool {
+  font-size: 13px;
   font-weight: 600;
 }
 
 #detail {
   margin: 0;
-  flex: 1;
+  max-height: 96px;
+  padding: 8px 10px;
   overflow: hidden;
+  border-radius: 10px;
+  background: #1c1c1e;
   white-space: pre-wrap;
   word-break: break-all;
-  font: 11px ui-monospace, monospace;
-  opacity: 0.7;
+  font: 11px/1.5 ui-monospace, monospace;
+  color: rgba(255, 255, 255, 0.75);
+  mask-image: linear-gradient(#000 calc(100% - 16px), transparent);
 }
 
 #buttons {
@@ -119,38 +185,80 @@ body {
 
 button {
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 6px 16px;
   font: inherit;
+  font-weight: 500;
   color: #fff;
-  background: #333;
+  background: #2c2c2e;
+  transition: background 0.15s, transform 0.1s, opacity 0.2s;
+}
+
+button:hover {
+  background: #3a3a3c;
+}
+
+button:active {
+  transform: scale(0.96);
 }
 
 #allow {
-  background: #2f7d32;
+  background: #248a3d;
+}
+
+#allow:hover {
+  background: #2da44e;
+}
+
+#allow:disabled {
+  opacity: 0.35;
+  transform: none;
 }
 
 #sessions {
   margin: 0;
-  padding: 0 0 12px;
+  padding: 2px 0 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-#sessions[hidden] {
-  display: none;
+  gap: 8px;
 }
 
 #sessions li {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+}
+
+#sessions[data-entering] li {
+  animation: rise 0.35s var(--ease) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+
+#sessions li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8e8e93;
+}
+
+#sessions li[data-mood='thinking']::before {
+  background: var(--blue);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+#sessions li[data-mood='needs']::before {
+  background: var(--orange);
+}
+
+#sessions li[data-mood='done']::before {
+  background: var(--green);
 }
 
 #sessions span:last-child {
-  opacity: 0.6;
+  margin-left: auto;
+  opacity: 0.55;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -159,7 +267,7 @@ button {
 #questions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .options {
@@ -170,13 +278,19 @@ button {
 }
 
 .options button {
-  padding: 4px 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
 }
 
 .options button.picked {
-  background: #0a84ff;
+  background: var(--blue);
 }
 
-#allow:disabled {
-  opacity: 0.4;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
