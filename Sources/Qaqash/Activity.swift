@@ -170,6 +170,11 @@ private struct CodeStyle: ButtonStyle {
 struct DoneCard: View {
     var finished: Finished
 
+    private var summary: String? {
+        let message = finished.event.raw["last_assistant_message"] as? String ?? ""
+        return message.split(separator: "\n").lazy.map { $0.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "`", with: "").trimmingCharacters(in: .whitespaces) }.first { !$0.isEmpty }
+    }
+
     var body: some View {
         let run = finished.run
         Button {
@@ -191,7 +196,7 @@ struct DoneCard: View {
                         HStack(spacing: 6) {
                             Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.qGreen)
                             Text("Done").fontWeight(.semibold).foregroundStyle(Color.qGreen)
-                            Text(run.output.last ?? run.steps.joined(separator: " · ")).foregroundStyle(.white.opacity(0.6))
+                            Text(summary ?? run.steps.joined(separator: " · ")).foregroundStyle(.white.opacity(0.6))
                         }
                         .font(.system(size: 13))
                     }
