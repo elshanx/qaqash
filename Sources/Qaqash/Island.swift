@@ -158,6 +158,7 @@ private struct Pages: View {
                     MiniPlayer()
                     MiniVSCode()
                 } else {
+                    if let finished = state.finished { DoneCard(finished: finished).transition(.rise) }
                     PlayerView().transition(.rise)
                     VSCodeCard()
                 }

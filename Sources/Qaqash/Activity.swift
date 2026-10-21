@@ -7,6 +7,11 @@ struct Run {
     var output: [String] = []
 }
 
+struct Finished {
+    var event: HookEvent
+    var run: Run
+}
+
 struct Activity {
     var id = UUID()
     var event: HookEvent
@@ -47,10 +52,12 @@ extension AppState {
         let id = event.sessionId ?? ""
         if event.name == "UserPromptSubmit" || event.name == "SessionEnd" {
             runs[id] = nil
+            if finished?.event.sessionId == event.sessionId { finished = nil }
             return
         }
         guard let run = nextRun(event, runs[id] ?? Run()) else { return }
         runs[id] = run
+        if run.done, !run.steps.isEmpty { finished = Finished(event: event, run: run) }
         if changesFiles(event.toolName) { activity = Activity(event: event, hunks: readHunks(event)) }
         if let activity, activity.event.sessionId == id, !activity.hunks.isEmpty { linger() }
     }
@@ -157,6 +164,49 @@ private struct CodeStyle: ButtonStyle {
                 .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(hovering ? 0.18 : 0), lineWidth: 1) }
                 .onHover { hovering = $0 }
         }
+    }
+}
+
+struct DoneCard: View {
+    var finished: Finished
+
+    var body: some View {
+        let run = finished.run
+        Button {
+            guard let pid = state.sessions.first(where: { $0.id == finished.event.sessionId })?.pid else { return }
+            DispatchQueue.global().async { if let app = sessionApp(pid) { openApp(app) } }
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 14) {
+                    Eyes(mood: .done, width: 10, height: 15, gap: 8)
+                        .frame(width: 56, height: 56)
+                        .background(Color.field, in: RoundedRectangle(cornerRadius: 14))
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(projectOf(finished.event)).font(.system(size: 15, weight: .semibold))
+                            Text("Claude Code").font(.system(size: 13)).foregroundStyle(.white.opacity(0.5))
+                            Spacer(minLength: 0)
+                            Text("\(run.steps.count)/\(run.steps.count)").font(.system(size: 11).monospacedDigit()).foregroundStyle(.white.opacity(0.4))
+                        }
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.qGreen)
+                            Text("Done").fontWeight(.semibold).foregroundStyle(Color.qGreen)
+                            Text(run.output.last ?? run.steps.joined(separator: " · ")).foregroundStyle(.white.opacity(0.6))
+                        }
+                        .font(.system(size: 13))
+                    }
+                    .lineLimit(1)
+                }
+                if let command = run.command {
+                    Terminal(command: command, output: Array(run.output.suffix(3))).clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+        }
+        .buttonStyle(Source())
+        .padding(.top, 6)
+        .padding(.bottom, 14)
+        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.08)).frame(height: 1) }
+        .padding(.bottom, 14)
     }
 }
 

@@ -40,6 +40,7 @@ struct Ask: Identifiable {
     var context: Double?
     var activity: Activity?
     var runs: [String: Run] = [:]
+    var finished: Finished?
     var sessions: [Session] = []
     var track: Track?
     var trackSyncedAt = Date()

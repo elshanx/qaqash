@@ -29,7 +29,7 @@ People install Qaqash once and get new versions without cloning or building.
 One at a time, verified on screen before the next.
 
 - [x] Command output: after a Bash step, show `$ command` and the tail of its output under the diff (needs the `PostToolUse` hook).
-- [ ] Done card: when a run finishes, home shows project, "Done", the last command's output and the step count.
+- [x] Done card: when a run finishes, home shows project, "Done", the last command's output and the step count.
 - [ ] Poke the face: clicking the mascot fast turns its eyes into spirals with blush, "Too many hits at once", back after 3s.
 - [ ] More eyes: happy closed arcs when done, a squint on hover.
 - [ ] Face moves: the face slides from the bar into the open card (`matchedGeometryEffect`).
