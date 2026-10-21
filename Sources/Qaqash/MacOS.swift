@@ -36,9 +36,13 @@ func parentOf(_ pid: Int32) -> Int32? {
     return info.kp_eproc.e_ppid
 }
 
-func openApp(_ bundleId: String) {
+func openApp(_ bundleId: String, folder: String? = nil) {
     guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else { return }
-    NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    if let folder {
+        NSWorkspace.shared.open([URL(fileURLWithPath: folder)], withApplicationAt: url, configuration: NSWorkspace.OpenConfiguration())
+    } else {
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
 }
 
 @discardableResult

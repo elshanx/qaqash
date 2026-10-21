@@ -174,7 +174,7 @@ struct DoneCard: View {
         let run = finished.run
         Button {
             guard let pid = state.sessions.first(where: { $0.id == finished.event.sessionId })?.pid else { return }
-            DispatchQueue.global().async { if let app = sessionApp(pid) { openApp(app) } }
+            openSession(pid, cwd: finished.event.cwd)
         } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 14) {

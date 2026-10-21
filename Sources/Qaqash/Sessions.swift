@@ -7,6 +7,7 @@ struct Session: Identifiable {
     var mood: Mood
     var seen: Date
     var pid: Int32?
+    var cwd: String?
     var app: String?
     var lastFile: String?
     var context: Int?
@@ -22,6 +23,13 @@ func sessionApp(_ pid: Int32) -> String? {
     return nil
 }
 
+func openSession(_ pid: Int32, cwd: String?) {
+    DispatchQueue.global().async {
+        guard let app = sessionApp(pid) else { return }
+        openApp(app, folder: app == vscodeId ? cwd : nil)
+    }
+}
+
 extension AppState {
     func trackSession(_ event: HookEvent) {
         guard let id = event.sessionId, event.transcriptPath != nil else { return }
@@ -32,7 +40,7 @@ extension AppState {
         }
         let known = index.map { sessions[$0] }
         let pid = event.pid ?? known?.pid
-        let session = Session(id: id, name: known?.name ?? projectOf(event), state: describe(event), mood: moodOf(event), seen: Date(), pid: pid,
+        let session = Session(id: id, name: known?.name ?? projectOf(event), state: describe(event), mood: moodOf(event), seen: Date(), pid: pid, cwd: event.cwd ?? known?.cwd,
                               app: known?.app, lastFile: changesFiles(event.toolName) ? fileOf(event) : known?.lastFile, context: known?.context)
         if let index { sessions[index] = session } else { sessions.append(session) }
         guard let pid, pid != known?.pid else { return }
@@ -73,7 +81,7 @@ private struct SessionRow: View {
         let clickable = session.pid != nil
         Button {
             guard let pid = session.pid else { return }
-            DispatchQueue.global().async { if let app = sessionApp(pid) { openApp(app) } }
+            openSession(pid, cwd: session.cwd)
         } label: {
             HStack(spacing: 8) {
                 Dot(mood: session.mood)
