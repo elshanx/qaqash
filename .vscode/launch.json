@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:qaqash}",
+      "name": "Debug Qaqash",
+      "target": "Qaqash",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug Qaqash"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:qaqash}",
+      "name": "Release Qaqash",
+      "target": "Qaqash",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release Qaqash"
+    }
+  ]
+}

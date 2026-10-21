@@ -21,7 +21,7 @@ Native Swift + SwiftUI, macOS 15+, built as a Swift package with no dependencies
 - A borderless, non-activating `NSPanel`, transparent, no Dock icon (`LSUIElement`, `.accessory`), first mouse accepted, visible on all Spaces.
 - Position: top-centre of the primary screen at y=0, window level 25 so it sits over the menu bar (`constrainFrameRect` is overridden so macOS doesn't push it down).
 - The window is a fixed transparent canvas (540x560) that ignores the mouse, so it never resizes mid-animation. A 30ms timer polls the cursor and only accepts clicks over the island's size (`state.hit`, reported by `onGeometryChange`).
-- The notch is about 190pt wide; the status text starts just right of it. The island is black and centred in the canvas, with rounded bottom corners and inverse-rounded "ears".
+- The status text starts 6pt right of the real notch edge (`auxiliaryTopRightArea`). The island is black and centred in the canvas, with rounded bottom corners and inverse-rounded "ears".
 - Animations use SwiftUI springs (`.morph` = response 0.45, damping 0.68). Never use `repeatForever` with `withAnimation`: views holding one never finish their removal transition. Use `keyframeAnimator(repeating:)` or `phaseAnimator`.
 
 ## Structure

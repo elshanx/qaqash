@@ -122,7 +122,7 @@ private struct Bar: View {
                     .id(state.statusText)
                     .transition(.asymmetric(insertion: .modifier(active: StatusIn(on: true), identity: StatusIn(on: false)).animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 0.28)), removal: .opacity.animation(.linear(duration: 0.05))))
             }
-            .padding(.leading, state.width / 2 + 87)
+            .padding(.leading, state.width / 2 + state.notch + 6)
             .padding(.trailing, 16)
             .opacity(state.open || music ? 0 : 0.8)
             Equalizer(height: 14, playing: true)

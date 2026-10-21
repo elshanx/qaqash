@@ -36,6 +36,7 @@ struct Ask: Identifiable {
     var lastStatus = "qaqash"
     var mood = Mood.idle
     var barHeight: CGFloat = 33
+    var notch: CGFloat = 80
     var bumped = false
     var context: Double?
     var activity: Activity?
@@ -69,7 +70,7 @@ struct Ask: Identifiable {
     var showActivity: Bool { page == .home && working }
     var showTabs: Bool { queue.isEmpty && hovering }
     var contentWidth: CGFloat { showActivity ? 510 : 460 }
-    var width: CGFloat { open ? contentWidth : 330 + (bumped ? 18 : 0) }
+    var width: CGFloat { open ? contentWidth : 340 + (bumped ? 18 : 0) }
     var displayMood: Mood { queue.isEmpty ? mood : .needs }
     var musicMode: Bool { track?.playing == true && displayMood != .needs }
 

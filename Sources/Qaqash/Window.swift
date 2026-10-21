@@ -41,6 +41,7 @@ private final class HostingView<Content: View>: NSHostingView<Content> {
         guard let screen = NSScreen.screens.first else { return }
         let menuBar = max(screen.frame.maxY - screen.visibleFrame.maxY, screen.safeAreaInsets.top)
         state.barHeight = menuBar > 0 ? menuBar : 33
+        state.notch = screen.auxiliaryTopRightArea.map { $0.minX - screen.frame.midX } ?? 80
         panel.setFrame(NSRect(x: screen.frame.midX - Self.canvas.width / 2, y: screen.frame.maxY - Self.canvas.height, width: Self.canvas.width, height: Self.canvas.height), display: true)
     }
 
